@@ -1,0 +1,59 @@
+==============================================
+PRESCRIPTION SCANNER APP - SETUP INSTRUCTIONS
+==============================================
+
+This project is built using React Native and Expo. Since the `node_modules` folder (which contains all the dependencies) is not included in this zip file to save space, you will need to install them before running the app. Follow the simple steps below to get the project running on your computer.
+
+----------------------------------------------
+PREREQUISITES
+----------------------------------------------
+Before you start, make sure you have the following installed on your computer:
+1. Node.js (Version 18 or above is recommended): Download from https://nodejs.org/
+2. Expo Go App on your mobile phone (available on both Play Store and App Store).
+
+----------------------------------------------
+STEP-BY-STEP SETUP
+----------------------------------------------
+
+STEP 1: Extract the App
+1. Extract (unzip) this entire folder to a location on your computer.
+
+STEP 2: Open Terminal/Command Prompt
+1. Open the extracted folder in your File Explorer.
+2. Open a Terminal or Command Prompt in this directory. 
+   - On Windows: You can click the address bar inside the folder in File Explorer, type `cmd` and hit Enter.
+   - Using VS Code (Recommended): Open the extracted folder in VS Code, then open the integrated terminal (`Ctrl` + `~` or `Terminal -> New Terminal`).
+
+STEP 3: Install Dependencies
+In the terminal, run the following command to download all required packages (this will recreate the `node_modules` folder automatically):
+
+npm install
+
+STEP 4: Start the Application
+Once the installation is complete, start the Expo development server by typing:
+
+npm start
+
+----------------------------------------------
+HOW TO VIEW THE APP
+----------------------------------------------
+After running `npm start` (or `npx expo start`), a QR code will appear in your terminal. You can use this to view the app on different platforms:
+
+► ON YOUR MOBILE PHONE (Recommended):
+- Android: Open the Expo Go app and scan the QR code using the built-in scanner.
+- iOS (iPhone): Open your default Camera app and point it at the QR code. A notification linking to open the app in Expo Go will appear.
+(Note: Your phone and your computer must be connected to the SAME Wi-Fi network).
+
+► ON THE WEB:
+- In the same terminal where the QR code is showing, press the letter `w` on your keyboard. This will automatically open the app in your default web browser (localhost:8081).
+
+► ON AN EMULATOR/SIMULATOR (If you have Android Studio/Xcode installed):
+- Press `a` in the terminal to open on an Android emulator.
+- Press `i` in the terminal to open on an iOS simulator (Mac only).
+
+----------------------------------------------
+TROUBLESHOOTING
+----------------------------------------------
+- Error: "npm is not recognized as an internal or external command" -> You haven't installed Node.js properly, or you need to restart your terminal/computer after installing Node.js.
+- Error: "Port 8081 is already in use" -> Something else is running on this port. Expo might assign a new port automatically, but if it fails, simply close your other running servers and try again.
+- App crashes immediately or doesn't connect -> Ensure your mobile device and computer are on the exact same Wi-Fi network. If issues persist, try running `npm start -- -c` to clear the cache.

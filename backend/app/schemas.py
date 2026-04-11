@@ -1,0 +1,83 @@
+from pydantic import BaseModel, EmailStr
+from typing import List, Optional
+from datetime import datetime
+
+class UserBase(BaseModel):
+    full_name: str
+    email: EmailStr
+    phone: Optional[str] = None
+
+class UserCreate(UserBase):
+    password: str
+
+class UserUpdate(BaseModel):
+    full_name: Optional[str] = None
+    email: Optional[EmailStr] = None
+    phone: Optional[str] = None
+
+class UserLogin(BaseModel):
+    identifier: str # Email or Phone
+    password: str
+
+class OTPVerify(BaseModel):
+    user_id: str
+    otp: str
+
+class OTPResend(BaseModel):
+    user_id: str
+
+class UserResponse(UserBase):
+    id: str
+    class Config:
+        from_attributes = True
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+    user: UserResponse
+
+class PrescriptionHistoryItem(BaseModel):
+    id: str
+    date: datetime
+    raw_text: str
+    avg_confidence: float
+    results: List[dict]
+    country: str
+    currency: str
+    class Config:
+        from_attributes = True
+
+class HistoryResponse(BaseModel):
+    status: str
+    history: List[PrescriptionHistoryItem]
+
+class MedicationTimeBase(BaseModel):
+    label: str
+    time: str
+    taken: bool = False
+    icon: str
+
+class MedicationTimeCreate(MedicationTimeBase):
+    pass
+
+class MedicationTimeResponse(MedicationTimeBase):
+    id: str
+    medication_id: str
+    class Config:
+        from_attributes = True
+
+class MedicationBase(BaseModel):
+    name: str
+    dose: str
+    color: str
+    color_bg: str
+
+class MedicationCreate(MedicationBase):
+    times: List[MedicationTimeCreate]
+
+class MedicationResponse(MedicationBase):
+    id: str
+    user_id: str
+    times: List[MedicationTimeResponse]
+    class Config:
+        from_attributes = True
