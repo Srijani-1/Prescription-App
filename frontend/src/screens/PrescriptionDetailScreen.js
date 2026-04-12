@@ -1,12 +1,12 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import {
-  View, Text, StyleSheet, TouchableOpacity, ScrollView,
-  Image, SafeAreaView, Animated, LayoutAnimation,
+  View, Text, StyleSheet, TouchableOpacity, ScrollView, SafeAreaView, Animated, LayoutAnimation,
   UIManager, Platform, Dimensions,
 } from 'react-native';
 import { COLORS } from '../theme';
 import { Feather, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { API_URL } from '../config';
+import { Image } from 'expo-image';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -156,10 +156,16 @@ const MedicineCard = ({ item, index }) => {
 };
 
 // ─── Main Screen ───────────────────────────────────────────────────────────
-export default function PrescriptionDetailScreen({ route, navigate }) {
+export default function PrescriptionDetailScreen({ route, navigation }) {
   const { record } = route?.params || {};
   const [imageError, setImageError] = useState(false);
   const [imageLoading, setImageLoading] = useState(true);
+  const imageUri = useMemo(() => {
+    if (!record?.image_url) return null;
+    return record.image_url.startsWith('http')
+      ? record.image_url
+      : `${API_URL.replace(/\/$/, '')}${record.image_url}`;
+  }, [record?.image_url]);
 
   if (!record) {
     return (
@@ -167,7 +173,7 @@ export default function PrescriptionDetailScreen({ route, navigate }) {
         <View style={styles.centerState}>
           <Feather name="alert-circle" size={40} color={COLORS.textSecondary} />
           <Text style={styles.centerText}>Record not found</Text>
-          <TouchableOpacity style={styles.backBtn} onPress={() => navigate('MEDICAL_HISTORY')}>
+          <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
             <Text style={styles.backBtnText}>Go Back</Text>
           </TouchableOpacity>
         </View>
@@ -192,7 +198,7 @@ export default function PrescriptionDetailScreen({ route, navigate }) {
         <View style={styles.header}>
           <TouchableOpacity
             style={styles.headerBack}
-            onPress={() => navigate('MEDICAL_HISTORY')}
+            onPress={() => navigation.goBack()}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
             <Feather name="arrow-left" size={20} color={COLORS.textPrimary} />
@@ -232,33 +238,37 @@ export default function PrescriptionDetailScreen({ route, navigate }) {
             <Text style={styles.imageSectionTitle}>ORIGINAL PRESCRIPTION</Text>
           </View>
 
-          {record.image_url && !imageError ? (
-            <View style={styles.imageWrapper}>
+          <View style={styles.imageWrapper}>
+            {imageUri && (
               <Image
-                source={{ 
-                  uri: record.image_url ? (record.image_url.startsWith('http') ? record.image_url : `${API_URL.replace(/\/$/, '')}${record.image_url}`) : null 
-                }}
+                key={imageUri}
+                source={{ uri: imageUri, cache: 'force-cache' }}
                 style={styles.prescriptionImage}
                 resizeMode="contain"
-                onLoadStart={() => setImageLoading(true)}
-                onLoadEnd={() => setImageLoading(false)}
-                onError={() => { setImageError(true); setImageLoading(false); }}
+                onLoadEnd={() => {
+                  if (imageLoading) setImageLoading(false);
+                }}
+                onError={() => {
+                  setImageError(true);
+                  setImageLoading(false);
+                }}
               />
-              {imageLoading && (
-                <View style={styles.imageLoadingOverlay}>
-                  <MaterialCommunityIcons name="image-outline" size={32} color={COLORS.border} />
-                  <Text style={styles.imageLoadingText}>Loading image...</Text>
-                </View>
-              )}
-            </View>
-          ) : (
-            <View style={styles.noImageBox}>
-              <Feather name="image" size={32} color={COLORS.border} />
-              <Text style={styles.noImageText}>
-                {imageError ? 'Could not load image' : 'No image available'}
-              </Text>
-            </View>
-          )}
+            )}
+
+            {imageLoading && (
+              <View style={styles.imageLoadingOverlay}>
+                <MaterialCommunityIcons name="image-outline" size={32} color={COLORS.border} />
+                <Text style={styles.imageLoadingText}>Loading image...</Text>
+              </View>
+            )}
+
+            {imageError && (
+              <View style={styles.noImageBox}>
+                <Feather name="image" size={32} color={COLORS.border} />
+                <Text style={styles.noImageText}>Could not load image</Text>
+              </View>
+            )}
+          </View>
         </View>
 
         {/* ── Raw OCR Text ── */}
