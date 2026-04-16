@@ -20,8 +20,8 @@ const FEATURES = [
   {
     icon: 'swap-horizontal',
     iconLib: 'MaterialCommunityIcons',
-    label: 'Smart Substitutes',
-    sub: 'Save up to 80% with generics',
+    label: 'Medicine Tracker',
+    sub: 'Never miss a dose again',
     gradient: ['#7C3AED', '#6D28D9'],
   },
   {
@@ -40,11 +40,11 @@ const FEATURES = [
   },
 ];
 
-const STATS = [
-  { value: '14K+', label: 'Prescriptions' },
-  { value: '98%', label: 'Accuracy' },
-  { value: '60+', label: 'Countries' },
-];
+// const STATS = [
+//   { value: '14K+', label: 'Prescriptions' },
+//   { value: '98%', label: 'Accuracy' },
+//   { value: '60+', label: 'Countries' },
+// ];
 
 export default function LandingScreen({ navigate }) {
   const floatAnim = useRef(new Animated.Value(0)).current;
@@ -145,7 +145,7 @@ export default function LandingScreen({ navigate }) {
           </Text>
         </Animated.View>
 
-        {/* Stats */}
+        {/* Stats
         <Animated.View style={[styles.statsRow, { opacity: fadeAnim }]}>
           {STATS.map((s, i) => (
             <React.Fragment key={i}>
@@ -156,7 +156,7 @@ export default function LandingScreen({ navigate }) {
               {i < STATS.length - 1 && <View style={styles.statDivider} />}
             </React.Fragment>
           ))}
-        </Animated.View>
+        </Animated.View>*/}
       </LinearGradient>
 
       {/* Content Section */}
@@ -186,7 +186,7 @@ export default function LandingScreen({ navigate }) {
         </View>
 
         {/* Social proof */}
-        <View style={styles.proofCard}>
+        {/* <View style={styles.proofCard}>
           <View style={styles.proofAvatars}>
             {['A', 'R', 'S', 'M', 'K'].map((l, i) => (
               <LinearGradient
@@ -197,17 +197,17 @@ export default function LandingScreen({ navigate }) {
                 <Text style={styles.proofAvatarText}>{l}</Text>
               </LinearGradient>
             ))}
-          </View>
-          <Text style={styles.proofText}>
+          </View> */}
+        {/* <Text style={styles.proofText}>
             <Text style={styles.proofBold}>14,200+ people</Text> trust PrescribePal with their prescriptions
-          </Text>
-          <View style={styles.proofStars}>
+          </Text> */}
+        {/* <View style={styles.proofStars}>
             {[1, 2, 3, 4, 5].map(i => (
               <Ionicons key={i} name="star" size={14} color={COLORS.gold} />
             ))}
             <Text style={styles.proofRating}>4.9</Text>
-          </View>
-        </View>
+          </View> */}
+        {/* </View> */}
 
         <View style={{ height: 120 }} />
       </ScrollView>
@@ -229,7 +229,7 @@ export default function LandingScreen({ navigate }) {
           </TouchableOpacity>
         </View>
       </View>
-    </SafeAreaView>
+    </SafeAreaView >
   );
 }
 
