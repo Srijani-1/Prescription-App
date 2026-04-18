@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
     View, Text, StyleSheet, ScrollView, TouchableOpacity,
-    SafeAreaView, StatusBar, Animated, ActivityIndicator,
+    SafeAreaView, StatusBar, Animated, ActivityIndicator, Platform,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { COLORS, GRADIENTS, SHADOWS } from '../theme';
@@ -28,14 +28,13 @@ const formatRelative = (d) => {
 
 // ─── Timeline Event Card ────────────────────────────────────────────────────────
 const TimelineEvent = ({ item, isLast, onPress }) => {
-    const isScan = item.type === 'scan';
-    const colors = isScan ? GRADIENTS.teal : GRADIENTS.purple;
-
     return (
         <TouchableOpacity style={tc.wrap} onPress={onPress} activeOpacity={0.8}>
             {/* Vertical line */}
             <View style={tc.lineCol}>
-                <LinearGradient colors={colors} style={tc.dot} />
+                <LinearGradient colors={['#0D9488', '#0891B2']} style={tc.dot}>
+                    <View style={tc.dotInner} />
+                </LinearGradient>
                 {!isLast && <View style={tc.line} />}
             </View>
 
@@ -47,15 +46,9 @@ const TimelineEvent = ({ item, isLast, onPress }) => {
                         <Text style={tc.titleText} numberOfLines={1}>{item.title}</Text>
                         {item.subtitle ? <Text style={tc.subtitle} numberOfLines={1}>{item.subtitle}</Text> : null}
                     </View>
-                    <View style={[tc.typeBadge, { backgroundColor: isScan ? COLORS.successBg : '#F0EEFF' }]}>
-                        <MaterialCommunityIcons
-                            name={isScan ? 'scan-helper' : 'pill'}
-                            size={12}
-                            color={isScan ? COLORS.primary : '#7C3AED'}
-                        />
-                        <Text style={[tc.typeText, { color: isScan ? COLORS.primary : '#7C3AED' }]}>
-                            {isScan ? 'Rx Scan' : 'Manual'}
-                        </Text>
+                    <View style={tc.typeBadge}>
+                        <Feather name="file-text" size={10} color={COLORS.textMuted} />
+                        <Text style={tc.typeText}>Record</Text>
                     </View>
                 </View>
 
@@ -64,7 +57,6 @@ const TimelineEvent = ({ item, isLast, onPress }) => {
                     <View style={tc.medRow}>
                         {item.medicines.slice(0, 3).map((m, i) => (
                             <View key={i} style={tc.medChip}>
-                                <MaterialCommunityIcons name="pill" size={10} color={COLORS.primary} />
                                 <Text style={tc.medChipText}>{m}</Text>
                             </View>
                         ))}
@@ -74,85 +66,75 @@ const TimelineEvent = ({ item, isLast, onPress }) => {
                     </View>
                 )}
 
-                {item.confidence != null && (
-                    <View style={tc.confRow}>
-                        <Feather name="bar-chart-2" size={11} color={COLORS.textMuted} />
-                        <Text style={tc.confText}>
-                            {Math.round(item.confidence * (item.confidence <= 1 ? 100 : 1))}% OCR confidence
-                        </Text>
-                    </View>
-                )}
-
-                <Feather name="chevron-right" size={16} color={COLORS.border} style={tc.arrow} />
+                <View style={tc.cardFooter}>
+                    {item.confidence != null && (
+                        <View style={tc.confRow}>
+                            <Feather name="check-circle" size={11} color="#10B981" />
+                            <Text style={tc.confText}>Verified AI Record</Text>
+                        </View>
+                    )}
+                    <Feather name="chevron-right" size={14} color={COLORS.textMuted} />
+                </View>
             </View>
         </TouchableOpacity>
     );
 };
 
 const tc = StyleSheet.create({
-    wrap: { flexDirection: 'row', paddingHorizontal: 20, marginBottom: 4 },
+    wrap: { flexDirection: 'row', paddingHorizontal: 20, marginBottom: 0 },
     lineCol: { width: 32, alignItems: 'center' },
-    dot: { width: 14, height: 14, borderRadius: 7, marginTop: 18, zIndex: 1 },
-    line: { width: 2, flex: 1, backgroundColor: COLORS.border, marginTop: 2 },
-    card: {
-        flex: 1, marginLeft: 12, backgroundColor: COLORS.white,
-        borderRadius: 16, padding: 14, marginBottom: 12,
-        borderWidth: 1, borderColor: COLORS.border, ...SHADOWS.sm,
+    dot: { 
+        width: 18, height: 18, borderRadius: 9, marginTop: 16, zIndex: 1,
+        justifyContent: 'center', alignItems: 'center',
+        borderWidth: 3, borderColor: '#fff', ...SHADOWS.sm,
     },
-    cardTop: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, marginBottom: 8 },
-    dateText: { fontSize: 11, fontWeight: '600', color: COLORS.textMuted, marginBottom: 2 },
-    titleText: { fontSize: 14, fontWeight: '800', color: COLORS.textPrimary },
-    subtitle: { fontSize: 12, color: COLORS.textSecondary, marginTop: 2 },
+    dotInner: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#fff' },
+    line: { width: 2, flex: 1, backgroundColor: '#E2E8F0', marginTop: -4, marginBottom: -4 },
+    card: {
+        flex: 1, marginLeft: 16, backgroundColor: '#FFFFFF',
+        borderRadius: 24, padding: 16, marginBottom: 20,
+        borderWidth: 1, borderColor: 'rgba(226,232,240,0.8)',
+        borderLeftWidth: 4, borderLeftColor: COLORS.primary,
+        ...SHADOWS.md,
+    },
+    cardTop: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, marginBottom: 12 },
+    dateText: { fontSize: 10, fontWeight: '800', color: COLORS.primary, marginBottom: 4, textTransform: 'uppercase', letterSpacing: 1 },
+    titleText: { fontSize: 16, fontWeight: '900', color: COLORS.textPrimary, letterSpacing: -0.4 },
+    subtitle: { fontSize: 12, color: COLORS.textSecondary, marginTop: 4, lineHeight: 18, fontWeight: '500' },
     typeBadge: {
         flexDirection: 'row', alignItems: 'center', gap: 4,
         paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8,
+        backgroundColor: COLORS.lightGray,
     },
-    typeText: { fontSize: 10, fontWeight: '700' },
-    medRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 5, marginBottom: 6 },
+    typeText: { fontSize: 10, fontWeight: '700', color: COLORS.textMuted },
+    medRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 14 },
     medChip: {
-        flexDirection: 'row', alignItems: 'center', gap: 4,
-        backgroundColor: COLORS.successBg, paddingHorizontal: 7, paddingVertical: 3,
-        borderRadius: 6, borderWidth: 1, borderColor: COLORS.border,
+        backgroundColor: '#F1F5F9', paddingHorizontal: 10, paddingVertical: 4,
+        borderRadius: 8,
     },
-    medChipText: { fontSize: 10, fontWeight: '600', color: COLORS.primary },
-    moreText: { fontSize: 10, color: COLORS.textMuted, fontWeight: '600', alignSelf: 'center' },
-    confRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-    confText: { fontSize: 11, color: COLORS.textMuted },
-    arrow: { position: 'absolute', right: 12, top: 18 },
+    medChipText: { fontSize: 10, fontWeight: '700', color: COLORS.textPrimary },
+    moreText: { fontSize: 10, color: COLORS.textMuted, fontWeight: '700', alignSelf: 'center' },
+    cardFooter: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingTop: 12, borderTopWidth: 1, borderTopColor: '#F1F5F9' },
+    confRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+    confText: { fontSize: 11, color: '#10B981', fontWeight: '600' },
 });
 
-// ─── Filter Tab ─────────────────────────────────────────────────────────────────
-const FilterTab = ({ label, active, onPress }) => (
-    <TouchableOpacity
-        style={[ft.tab, active && ft.tabActive]}
-        onPress={onPress}
-        activeOpacity={0.8}
-    >
-        <Text style={[ft.tabText, active && ft.tabTextActive]}>{label}</Text>
-    </TouchableOpacity>
-);
-
-const ft = StyleSheet.create({
-    tab: {
-        paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20,
-        backgroundColor: COLORS.white, borderWidth: 1, borderColor: COLORS.border,
-    },
-    tabActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
-    tabText: { fontSize: 13, fontWeight: '600', color: COLORS.textSecondary },
-    tabTextActive: { color: '#fff' },
-});
+// Filter logic removed as requested
 
 // ─── Stats Header ───────────────────────────────────────────────────────────────
 const StatsRow = ({ total, thisMonth, meds }) => (
-    <LinearGradient colors={['#0F766E', '#0891B2']} style={stats.card}>
+    <LinearGradient colors={['rgba(255,255,255,0.95)', 'rgba(255,255,255,0.85)']} style={stats.card}>
         {[
-            { value: total, label: 'Total Rx' },
-            { value: thisMonth, label: 'This Month' },
-            { value: meds, label: 'Total Meds' },
+            { value: total, label: 'Total Rx', icon: 'file-text' },
+            { value: thisMonth, label: 'Current Month', icon: 'calendar' },
+            { value: meds, label: 'Total Meds', icon: 'pill' },
         ].map((s, i) => (
             <View key={i} style={[stats.item, i < 2 && stats.itemBorder]}>
+                <View style={stats.iconRow}>
+                    <Feather name={s.icon} size={10} color={COLORS.primary} />
+                    <Text style={stats.label}>{s.label}</Text>
+                </View>
                 <Text style={stats.val}>{s.value}</Text>
-                <Text style={stats.label}>{s.label}</Text>
             </View>
         ))}
     </LinearGradient>
@@ -160,22 +142,21 @@ const StatsRow = ({ total, thisMonth, meds }) => (
 
 const stats = StyleSheet.create({
     card: {
-        flexDirection: 'row', marginHorizontal: 20, borderRadius: 18,
-        padding: 16, marginBottom: 20,
+        flexDirection: 'row', marginHorizontal: 20, borderRadius: 24,
+        padding: 20, marginBottom: 24,
+        borderWidth: 1, borderColor: 'rgba(255,255,255,0.6)',
+        ...SHADOWS.md,
     },
     item: { flex: 1, alignItems: 'center' },
-    itemBorder: { borderRightWidth: 1, borderRightColor: 'rgba(255,255,255,0.2)' },
-    val: { fontSize: 26, fontWeight: '900', color: '#fff' },
-    label: { fontSize: 11, color: 'rgba(255,255,255,0.6)', fontWeight: '600', marginTop: 3, textAlign: 'center' },
+    itemBorder: { borderRightWidth: 1, borderRightColor: '#F1F5F9' },
+    iconRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 4 },
+    val: { fontSize: 24, fontWeight: '900', color: COLORS.textPrimary, letterSpacing: -0.5 },
+    label: { fontSize: 10, color: COLORS.textSecondary, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.3 },
 });
-
-// ─── Main Screen ────────────────────────────────────────────────────────────────
-const FILTERS = ['All', 'Scans', 'Manual'];
 
 export default function PrescriptionTimelineScreen({ user, navigate }) {
     const [history, setHistory] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [filter, setFilter] = useState('All');
     const fadeAnim = useRef(new Animated.Value(0)).current;
 
     useEffect(() => {
@@ -223,11 +204,7 @@ export default function PrescriptionTimelineScreen({ user, navigate }) {
         }
     };
 
-    const filtered = history.filter(h => {
-        if (filter === 'Scans') return h.type === 'scan';
-        if (filter === 'Manual') return h.type === 'manual';
-        return true;
-    });
+    const filtered = history;
 
     const thisMonth = history.filter(h => {
         const d = new Date(h.date);
@@ -249,29 +226,25 @@ export default function PrescriptionTimelineScreen({ user, navigate }) {
         <SafeAreaView style={styles.container}>
             <StatusBar barStyle="light-content" backgroundColor={COLORS.midnight} />
 
-            {/* Header */}
-            <LinearGradient colors={GRADIENTS.hero} style={styles.header}>
-                <View style={styles.bgDeco} />
-                <View style={styles.headerTop}>
-                    <TouchableOpacity onPress={() => navigate('DASHBOARD')} style={styles.backBtn}>
-                        <Feather name="arrow-left" size={20} color="rgba(255,255,255,0.8)" />
-                    </TouchableOpacity>
-                    <View style={{ flex: 1, paddingLeft: 14 }}>
-                        <Text style={styles.headerTitle}>Prescription Timeline</Text>
-                        <Text style={styles.headerSub}>Your complete medical history</Text>
+            {/* Header Area */}
+            <View style={styles.headerContainer}>
+                <LinearGradient 
+                    colors={['#0D9488', '#0891B2']} 
+                    style={styles.header}
+                    start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+                >
+                    <View style={styles.headerTop}>
+                        <TouchableOpacity onPress={() => navigate('DASHBOARD')} style={styles.backBtn}>
+                            <Feather name="chevron-left" size={24} color="#fff" />
+                        </TouchableOpacity>
+                        <View style={styles.headerTitleCenter}>
+                            <Text style={styles.headerTitle}>Timeline</Text>
+                            <Text style={styles.headerSub}>Complete Medical History</Text>
+                        </View>
+                        <View style={{ width: 32 }} />
                     </View>
-                    <TouchableOpacity style={styles.refreshBtn} onPress={fetchHistory}>
-                        <Feather name="refresh-cw" size={16} color="rgba(255,255,255,0.8)" />
-                    </TouchableOpacity>
-                </View>
-
-                {/* Filter tabs */}
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow}>
-                    {FILTERS.map(f => (
-                        <FilterTab key={f} label={f} active={filter === f} onPress={() => setFilter(f)} />
-                    ))}
-                </ScrollView>
-            </LinearGradient>
+                </LinearGradient>
+            </View>
 
             {loading ? (
                 <View style={styles.centerBox}>
@@ -327,46 +300,43 @@ export default function PrescriptionTimelineScreen({ user, navigate }) {
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: COLORS.background },
-    header: { paddingBottom: 16, overflow: 'hidden', position: 'relative' },
-    bgDeco: {
-        position: 'absolute', width: 200, height: 200, borderRadius: 100,
-        backgroundColor: 'rgba(13,148,136,0.1)', top: -60, right: -60,
+    container: { flex: 1, backgroundColor: '#F0F9F9' },
+
+    headerContainer: {
+        paddingHorizontal: 16, paddingTop: Platform.OS === 'ios' ? 0 : 10,
+        backgroundColor: '#F0F9F9', paddingBottom: 16,
     },
-    headerTop: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 24, paddingTop: 20, paddingBottom: 14 },
+    header: {
+        paddingHorizontal: 16, paddingVertical: 14, borderRadius: 24,
+        ...SHADOWS.md,
+    },
+    headerTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+    headerTitleCenter: { alignItems: 'center', flex: 1 },
     backBtn: {
-        width: 40, height: 40, borderRadius: 20,
-        backgroundColor: 'rgba(255,255,255,0.1)', justifyContent: 'center', alignItems: 'center',
-        borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)',
+        width: 32, height: 32, justifyContent: 'center', alignItems: 'center',
     },
-    refreshBtn: {
-        width: 40, height: 40, borderRadius: 20,
-        backgroundColor: 'rgba(255,255,255,0.1)', justifyContent: 'center', alignItems: 'center',
-        borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)',
-    },
-    headerTitle: { fontSize: 20, fontWeight: '900', color: '#fff' },
-    headerSub: { fontSize: 12, color: 'rgba(255,255,255,0.5)', marginTop: 1 },
-    filterRow: { paddingHorizontal: 20, gap: 8, paddingBottom: 4 },
+    headerTitle: { fontSize: 20, fontWeight: '900', color: '#fff', letterSpacing: -0.5 },
+    headerSub: { fontSize: 10, color: 'rgba(255,255,255,0.8)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1.2 },
 
     centerBox: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
-    loadingText: { fontSize: 14, color: COLORS.textSecondary, fontWeight: '600' },
+    loadingText: { fontSize: 14, color: COLORS.textSecondary, fontWeight: '700' },
 
-    monthRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, marginBottom: 12, gap: 10 },
-    monthLine: { flex: 1, height: 1, backgroundColor: COLORS.border },
+    monthRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, marginBottom: 16, gap: 12, marginTop: 10 },
+    monthLine: { flex: 1, height: 1.5, backgroundColor: 'rgba(13,148,136,0.1)' },
     monthLabel: {
-        fontSize: 12, fontWeight: '700', color: COLORS.textMuted,
-        backgroundColor: COLORS.background, paddingHorizontal: 8,
+        fontSize: 12, fontWeight: '800', color: COLORS.primary,
+        textTransform: 'uppercase', letterSpacing: 1.2,
     },
 
     emptyBox: {
-        alignItems: 'center', padding: 40, gap: 10,
+        alignItems: 'center', padding: 40, gap: 12,
         marginHorizontal: 20, marginTop: 20,
         backgroundColor: COLORS.white, borderRadius: 24,
-        borderWidth: 1, borderColor: COLORS.border,
+        borderWidth: 1, borderColor: '#E2E8F0', ...SHADOWS.md,
     },
     emptyTitle: { fontSize: 18, fontWeight: '800', color: COLORS.textPrimary },
-    emptyText: { fontSize: 13, color: COLORS.textSecondary, textAlign: 'center', lineHeight: 20 },
-    scanCta: { marginTop: 8, borderRadius: 14, overflow: 'hidden' },
-    scanCtaGrad: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 24, paddingVertical: 13 },
+    emptyText: { fontSize: 13, color: COLORS.textSecondary, textAlign: 'center', lineHeight: 21 },
+    scanCta: { marginTop: 12, borderRadius: 16, overflow: 'hidden' },
+    scanCtaGrad: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 28, paddingVertical: 14, ...SHADOWS.colored },
     scanCtaText: { fontSize: 15, fontWeight: '800', color: '#fff' },
 });

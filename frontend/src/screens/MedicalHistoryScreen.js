@@ -423,7 +423,7 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 360,
     alignItems: 'center',
-    ...SHADOWS.xl,
+    ...SHADOWS.lg,
   },
   confirmIcon: {
     width: 64,

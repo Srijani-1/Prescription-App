@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
     View, Text, StyleSheet, TextInput, TouchableOpacity,
-    ScrollView, SafeAreaView, ActivityIndicator, StatusBar,
+    ScrollView, SafeAreaView, ActivityIndicator, StatusBar, Platform,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { COLORS, SHADOWS } from '../theme';
@@ -79,16 +79,23 @@ export default function DrugInteractionScreen() {
         <SafeAreaView style={styles.container}>
             <StatusBar barStyle="light-content" />
 
-            {/* Header */}
-            <LinearGradient colors={['#0A1628', '#0F2535']} style={styles.header}>
-                <LinearGradient colors={['#7C3AED', '#6D28D9']} style={styles.headerIcon}>
-                    <MaterialCommunityIcons name="shield-search" size={36} color={COLORS.textMuted} />
+            {/* Header Area */}
+            <View style={styles.headerContainer}>
+                <LinearGradient 
+                    colors={['#0D9488', '#0891B2']} 
+                    style={styles.header}
+                    start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+                >
+                    <View style={styles.headerTop}>
+                        <View style={{ width: 32 }} />
+                        <View style={styles.headerTitleCenter}>
+                            <Text style={styles.headerTitle}>Drug Check</Text>
+                            <Text style={styles.headerSub}>Check safety of medicine pairs</Text>
+                        </View>
+                        <View style={{ width: 32 }} />
+                    </View>
                 </LinearGradient>
-                <View style={{ flex: 1 }}>
-                    <Text style={styles.headerTitle}>Drug Interaction Checker</Text>
-                    <Text style={styles.headerSub}>Check if two medicines are safe together</Text>
-                </View>
-            </LinearGradient>
+            </View>
 
             <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
                 {!result && !error && (
@@ -317,134 +324,140 @@ export default function DrugInteractionScreen() {
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: COLORS.background },
+    container: { flex: 1, backgroundColor: '#F0F9F9' },
 
-    header: {
-        flexDirection: 'row', alignItems: 'center', gap: 14,
-        paddingHorizontal: 20, paddingVertical: 18,
+    headerContainer: {
+        paddingHorizontal: 16, paddingTop: Platform.OS === 'ios' ? 0 : 10,
+        backgroundColor: '#F0F9F9', paddingBottom: 16,
     },
-    headerIcon: { width: 46, height: 46, borderRadius: 15, justifyContent: 'center', alignItems: 'center' },
-    headerTitle: { fontSize: 17, fontWeight: '800', color: '#fff' },
-    headerSub: { fontSize: 12, color: 'rgba(255,255,255,0.5)', marginTop: 2 },
+    header: {
+        paddingHorizontal: 16, paddingVertical: 14, borderRadius: 24,
+        ...SHADOWS.md,
+    },
+    headerTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+    headerTitleCenter: { alignItems: 'center', flex: 1 },
+    headerTitle: { fontSize: 20, fontWeight: '900', color: '#fff', letterSpacing: -0.5 },
+    headerSub: { fontSize: 10, color: 'rgba(255,255,255,0.8)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1.2 },
 
-    content: { padding: 20, paddingBottom: 60 },
+    content: { padding: 16, paddingBottom: 100 },
 
     inputCard: {
-        backgroundColor: '#fff', borderRadius: 22, padding: 18,
-        borderWidth: 1, borderColor: COLORS.border, ...SHADOWS.md, gap: 14, marginBottom: 16,
+        backgroundColor: '#fff', borderRadius: 24, padding: 20,
+        borderWidth: 1, borderColor: 'rgba(226,232,240,0.8)', ...SHADOWS.md, gap: 16, marginBottom: 20,
     },
 
     countryBtn: {
         flexDirection: 'row', alignItems: 'center', gap: 8,
-        backgroundColor: COLORS.successBg, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 10,
-        borderWidth: 1, borderColor: COLORS.border, alignSelf: 'flex-start',
+        backgroundColor: '#F1F5F9', borderRadius: 12, paddingHorizontal: 14, paddingVertical: 10,
+        borderWidth: 1, borderColor: '#E2E8F0', alignSelf: 'flex-start',
     },
-    countryBtnText: { fontSize: 14, fontWeight: '600', color: COLORS.textPrimary, flex: 1 },
+    countryBtnText: { fontSize: 13, fontWeight: '700', color: COLORS.textPrimary, flex: 1 },
     countryDropdown: {
-        backgroundColor: '#fff', borderRadius: 14, borderWidth: 1, borderColor: COLORS.border,
-        overflow: 'hidden', ...SHADOWS.sm,
+        backgroundColor: '#fff', borderRadius: 16, borderWidth: 1, borderColor: '#E2E8F0',
+        overflow: 'hidden', ...SHADOWS.md, marginBottom: 12,
     },
     countryOption: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-        paddingHorizontal: 16, paddingVertical: 13, borderBottomWidth: 1, borderBottomColor: COLORS.border,
+        paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#F1F5F9',
     },
-    countryOptionActive: { backgroundColor: COLORS.successBg },
-    countryOptionText: { fontSize: 14, color: COLORS.textPrimary },
+    countryOptionActive: { backgroundColor: '#F0F9F9' },
+    countryOptionText: { fontSize: 14, color: COLORS.textPrimary, fontWeight: '600' },
 
-    drugsContainer: { gap: 4 },
+    drugsContainer: { gap: 8 },
     drugInput: {
         flexDirection: 'row', alignItems: 'center', gap: 12,
-        backgroundColor: COLORS.lightGray, borderRadius: 14, paddingHorizontal: 14, paddingVertical: 13,
-        borderWidth: 1.5, borderColor: COLORS.border,
+        backgroundColor: '#F8FAFC', borderRadius: 16, paddingHorizontal: 14, paddingVertical: 14,
+        borderWidth: 1.5, borderColor: '#E2E8F0',
     },
-    drugInputFocused: { borderColor: COLORS.primary, backgroundColor: COLORS.successBg },
-    drugPillIcon: { width: 28, height: 28, borderRadius: 9, justifyContent: 'center', alignItems: 'center' },
-    drugTextInput: { flex: 1, fontSize: 15, color: COLORS.textPrimary, fontWeight: '500' },
+    drugInputFocused: { borderColor: COLORS.primary, backgroundColor: '#fff' },
+    drugPillIcon: { width: 32, height: 32, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
+    drugTextInput: { flex: 1, fontSize: 15, color: COLORS.textPrimary, fontWeight: '700' },
 
-    vsDivider: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 4 },
-    vsDividerLine: { flex: 1, height: 1, backgroundColor: COLORS.border },
+    vsDivider: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 8 },
+    vsDividerLine: { flex: 1, height: 1.5, backgroundColor: '#F1F5F9' },
     swapBtn: {
-        width: 34, height: 34, borderRadius: 17, backgroundColor: '#fff',
-        justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: COLORS.border,
+        width: 38, height: 38, borderRadius: 19, backgroundColor: '#fff',
+        justifyContent: 'center', alignItems: 'center', borderWidth: 1.5, borderColor: '#E2E8F0',
+        ...SHADOWS.sm,
     },
 
     checkBtn: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10,
-        height: 52, borderRadius: 14,
+        height: 54, borderRadius: 16, marginTop: 4, ...SHADOWS.colored,
     },
-    checkBtnText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+    checkBtnText: { color: '#fff', fontSize: 16, fontWeight: '800' },
 
     errorBox: {
-        flexDirection: 'row', gap: 10, backgroundColor: COLORS.dangerBg,
-        padding: 14, borderRadius: 14, marginBottom: 16, borderWidth: 1, borderColor: COLORS.dangerBorder,
+        flexDirection: 'row', gap: 10, backgroundColor: '#FFF1F2',
+        padding: 16, borderRadius: 16, marginBottom: 20, borderWidth: 1, borderColor: '#FECACA',
     },
-    errorText: { flex: 1, fontSize: 14, color: COLORS.dangerText },
+    errorText: { flex: 1, fontSize: 14, color: '#E11D48', fontWeight: '600' },
 
-    results: { gap: 12 },
+    results: { gap: 16 },
 
     severityBanner: {
-        flexDirection: 'row', alignItems: 'center', gap: 14,
-        padding: 18, borderRadius: 18,
+        flexDirection: 'row', alignItems: 'center', gap: 16,
+        padding: 20, borderRadius: 24, ...SHADOWS.colored,
     },
-    severityLabel: { fontSize: 17, fontWeight: '800', color: '#fff' },
-    severitySub: { fontSize: 13, color: 'rgba(255,255,255,0.8)', marginTop: 2 },
+    severityLabel: { fontSize: 18, fontWeight: '900', color: '#fff' },
+    severitySub: { fontSize: 13, color: 'rgba(255,255,255,0.9)', marginTop: 2, fontWeight: '600' },
 
     riskCard: {
-        backgroundColor: '#fff', borderRadius: 16, padding: 16,
-        borderWidth: 1, borderColor: COLORS.border,
+        backgroundColor: '#fff', borderRadius: 20, padding: 18,
+        borderWidth: 1, borderColor: 'rgba(226,232,240,0.8)', ...SHADOWS.md,
     },
-    riskTitle: { fontSize: 12, fontWeight: '700', color: COLORS.textSecondary, marginBottom: 10, letterSpacing: 0.5 },
-    riskBar: { height: 10, backgroundColor: COLORS.lightGray, borderRadius: 5, overflow: 'hidden', marginBottom: 6 },
-    riskFill: { height: 10, borderRadius: 5 },
+    riskTitle: { fontSize: 11, fontWeight: '800', color: COLORS.textSecondary, marginBottom: 12, letterSpacing: 1, textTransform: 'uppercase' },
+    riskBar: { height: 12, backgroundColor: '#F1F5F9', borderRadius: 6, overflow: 'hidden', marginBottom: 8 },
+    riskFill: { height: 12, borderRadius: 6 },
     riskLabels: { flexDirection: 'row', justifyContent: 'space-between' },
-    riskLabelText: { fontSize: 10, fontWeight: '600', color: COLORS.textMuted },
+    riskLabelText: { fontSize: 10, fontWeight: '700', color: COLORS.textMuted },
 
     drugPairCard: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-        backgroundColor: '#fff', borderRadius: 16, padding: 16, gap: 12,
-        borderWidth: 1, borderColor: COLORS.border,
+        backgroundColor: '#fff', borderRadius: 20, padding: 18, gap: 14,
+        borderWidth: 1, borderColor: 'rgba(226,232,240,0.8)', ...SHADOWS.sm,
     },
-    drugPairItem: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8 },
-    drugPairDot: { width: 10, height: 10, borderRadius: 5 },
-    drugPairName: { fontSize: 14, fontWeight: '700', color: COLORS.textPrimary, flex: 1 },
+    drugPairItem: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10 },
+    drugPairDot: { width: 12, height: 12, borderRadius: 6 },
+    drugPairName: { fontSize: 15, fontWeight: '800', color: COLORS.textPrimary, flex: 1, letterSpacing: -0.3 },
     drugPairSep: {
-        width: 28, height: 28, borderRadius: 14, backgroundColor: COLORS.lightGray,
+        width: 32, height: 32, borderRadius: 16, backgroundColor: '#F1F5F9',
         justifyContent: 'center', alignItems: 'center',
     },
 
     fdaBadge: {
         flexDirection: 'row', alignItems: 'center', gap: 8,
-        backgroundColor: '#ECFDF5', padding: 12, borderRadius: 12, borderWidth: 1, borderColor: '#6EE7B7',
+        backgroundColor: '#ECFDF5', padding: 14, borderRadius: 14, borderWidth: 1, borderColor: '#6EE7B7',
     },
-    fdaText: { fontSize: 13, fontWeight: '600', color: '#065F46' },
+    fdaText: { fontSize: 13, fontWeight: '700', color: '#065F46' },
 
     infoCard: {
-        backgroundColor: '#fff', borderRadius: 16, padding: 16,
-        borderWidth: 1, borderColor: COLORS.border,
+        backgroundColor: '#fff', borderRadius: 20, padding: 18,
+        borderWidth: 1, borderColor: 'rgba(226,232,240,0.8)', ...SHADOWS.sm,
     },
     infoLabel: {
-        fontSize: 11, fontWeight: '700', letterSpacing: 0.5,
-        marginBottom: 8, color: COLORS.textSecondary,
+        fontSize: 10, fontWeight: '800', letterSpacing: 1,
+        marginBottom: 10, color: COLORS.textSecondary, textTransform: 'uppercase',
     },
-    infoText: { fontSize: 14, lineHeight: 22 },
+    infoText: { fontSize: 14, lineHeight: 22, color: COLORS.textPrimary, fontWeight: '500' },
 
-    altRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 8 },
+    altRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 10 },
     altDot: { width: 8, height: 8, borderRadius: 4 },
-    altText: { fontSize: 14, color: COLORS.textPrimary, flex: 1 },
+    altText: { fontSize: 14, color: COLORS.textPrimary, flex: 1, fontWeight: '600' },
 
     newCheckBtn: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-        gap: 8, paddingVertical: 15, borderRadius: 14,
+        gap: 10, paddingVertical: 16, borderRadius: 16, ...SHADOWS.colored,
     },
-    newCheckText: { fontSize: 15, fontWeight: '700', color: '#fff' },
+    newCheckText: { fontSize: 16, fontWeight: '800', color: '#fff' },
 
     disclaimer: {
-        flexDirection: 'row', gap: 8, backgroundColor: COLORS.warningBg,
-        padding: 12, borderRadius: 12, alignItems: 'flex-start',
+        flexDirection: 'row', gap: 10, backgroundColor: 'rgba(251,191,36,0.1)',
+        padding: 14, borderRadius: 16, alignItems: 'flex-start',
     },
-    disclaimerText: { flex: 1, fontSize: 12, color: '#92400E', lineHeight: 18 },
+    disclaimerText: { flex: 1, fontSize: 12, color: '#92400E', lineHeight: 18, fontWeight: '500' },
 
-    emptyState: { alignItems: 'center', paddingTop: 40, marginBottom: 50, gap: 12 },
-    emptyTitle: { fontSize: 16, fontWeight: '700', color: COLORS.textPrimary },
-    emptyText: { fontSize: 14, color: COLORS.textSecondary, textAlign: 'center', lineHeight: 21, paddingHorizontal: 20 },
+    emptyState: { alignItems: 'center', paddingTop: 60, marginBottom: 60, gap: 16 },
+    emptyTitle: { fontSize: 18, fontWeight: '800', color: COLORS.textPrimary },
+    emptyText: { fontSize: 14, color: COLORS.textSecondary, textAlign: 'center', lineHeight: 22, paddingHorizontal: 32, fontWeight: '500' },
 });

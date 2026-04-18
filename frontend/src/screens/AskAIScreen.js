@@ -55,26 +55,10 @@ export default function AskAIScreen() {
     const flatRef = useRef(null);
     const inputRef = useRef(null);
     const fadeAnim = useRef(new Animated.Value(0)).current;
-    const dot1 = useRef(new Animated.Value(0)).current;
-    const dot2 = useRef(new Animated.Value(0)).current;
-    const dot3 = useRef(new Animated.Value(0)).current;
 
     useEffect(() => {
         Animated.timing(fadeAnim, { toValue: 1, duration: 500, useNativeDriver: true }).start();
     }, []);
-
-    useEffect(() => {
-        if (loading) {
-            const animDot = (dot, delay) => Animated.loop(
-                Animated.sequence([
-                    Animated.delay(delay),
-                    Animated.timing(dot, { toValue: -6, duration: 300, useNativeDriver: true }),
-                    Animated.timing(dot, { toValue: 0, duration: 300, useNativeDriver: true }),
-                ])
-            ).start();
-            animDot(dot1, 0); animDot(dot2, 150); animDot(dot3, 300);
-        }
-    }, [loading]);
 
     useEffect(() => {
         if (messages.length > 1) {
@@ -156,31 +140,26 @@ export default function AskAIScreen() {
 
     return (
         <SafeAreaView style={styles.container}>
-            <StatusBar barStyle="light-content" />
+            <StatusBar barStyle="dark-content" />
 
-            {/* Header */}
-            <LinearGradient colors={['#0A1628', '#0F2535']} style={styles.header}>
-                <View style={styles.headerLeft}>
-                    <LinearGradient colors={['#0D9488', '#0891B2']} style={styles.headerAvatar}>
-                        <MaterialCommunityIcons name="robot-outline" size={20} color="#fff" />
-                    </LinearGradient>
-                    <View>
-                        <Text style={styles.headerName}>Health Assistant</Text>
-                        <View style={styles.onlineRow}>
-                            <Animated.View style={[styles.onlineDot, {
-                                transform: [{ scale: dot1 }],
-                                opacity: loading ? dot1.interpolate({ inputRange: [-6, 0], outputRange: [1, 0.4] }) : 1,
-                            }]} />
-                            <Text style={styles.onlineText}>
-                                {loading ? 'Thinking...' : 'AI · Online'}
-                            </Text>
+
+            {/* Header Area */}
+            <View style={styles.headerContainer}>
+                <LinearGradient 
+                    colors={['#0D9488', '#0891B2']} 
+                    style={styles.header}
+                    start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+                >
+                    <View style={styles.headerTop}>
+                        <View style={{ width: 32 }} />
+                        <View style={styles.headerTitleCenter}>
+                            <Text style={styles.headerTitle}>Ask AI</Text>
+                            <Text style={styles.headerSub}>Personal Health Assistant</Text>
                         </View>
+                        <View style={{ width: 32 }} />
                     </View>
-                </View>
-                <TouchableOpacity style={styles.clearBtn} onPress={clearChat}>
-                    <Feather name="refresh-cw" size={16} color="rgba(255,255,255,0.7)" />
-                </TouchableOpacity>
-            </LinearGradient>
+                </LinearGradient>
+            </View>
 
             <KeyboardAvoidingView
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -197,14 +176,7 @@ export default function AskAIScreen() {
                     showsVerticalScrollIndicator={false}
                     ListFooterComponent={loading ? (
                         <View style={styles.typingRow}>
-                            <LinearGradient colors={['#0D9488', '#0891B2']} style={styles.aiAvatar}>
-                                <MaterialCommunityIcons name="robot-outline" size={14} color="#fff" />
-                            </LinearGradient>
-                            <View style={styles.typingBubble}>
-                                <Animated.View style={[styles.typingDot, { transform: [{ translateY: dot1 }] }]} />
-                                <Animated.View style={[styles.typingDot, { transform: [{ translateY: dot2 }] }]} />
-                                <Animated.View style={[styles.typingDot, { transform: [{ translateY: dot3 }] }]} />
-                            </View>
+                            <Text style={styles.typingText}>AI is thinking...</Text>
                         </View>
                     ) : null}
                 />
@@ -235,36 +207,38 @@ export default function AskAIScreen() {
                     <Text style={styles.disclaimerText}>Not a substitute for professional medical advice.</Text>
                 </View>
 
-                {/* Input */}
-                <View style={styles.inputBar}>
-                    <View style={styles.inputWrapper}>
-                        <TextInput
-                            ref={inputRef}
-                            style={styles.textInput}
-                            placeholder="Ask about any medicine..."
-                            placeholderTextColor={COLORS.textMuted}
-                            value={input}
-                            onChangeText={setInput}
-                            multiline
-                            maxLength={500}
-                            onSubmitEditing={() => sendMessage()}
-                        />
-                    </View>
-                    <TouchableOpacity
-                        style={[styles.sendBtn, (!input.trim() || loading) && styles.sendBtnDisabled]}
-                        onPress={() => sendMessage()}
-                        disabled={!input.trim() || loading}
-                    >
-                        <LinearGradient
-                            colors={(!input.trim() || loading) ? ['#94A3B8', '#94A3B8'] : ['#0D9488', '#0891B2']}
-                            style={styles.sendGradient}
+                {/* Input Bar */}
+                <View style={styles.footer}>
+                    <View style={styles.inputBar}>
+                        <View style={styles.inputWrapper}>
+                            <TextInput
+                                ref={inputRef}
+                                style={styles.textInput}
+                                placeholder="Ask about any medicine..."
+                                placeholderTextColor={COLORS.textMuted}
+                                value={input}
+                                onChangeText={setInput}
+                                multiline
+                                maxLength={500}
+                                onSubmitEditing={() => sendMessage()}
+                            />
+                        </View>
+                        <TouchableOpacity
+                            style={[styles.sendBtn, (!input.trim() || loading) && styles.sendBtnDisabled]}
+                            onPress={() => sendMessage()}
+                            disabled={!input.trim() || loading}
                         >
-                            {loading
-                                ? <ActivityIndicator size="small" color="#fff" />
-                                : <Feather name="send" size={16} color="#fff" />
-                            }
-                        </LinearGradient>
-                    </TouchableOpacity>
+                            <LinearGradient
+                                colors={(!input.trim() || loading) ? ['#94A3B8', '#94A3B8'] : ['#0D9488', '#0891B2']}
+                                style={styles.sendGradient}
+                            >
+                                {loading
+                                    ? <ActivityIndicator size="small" color="#fff" />
+                                    : <Feather name="send" size={18} color="#fff" />
+                                }
+                            </LinearGradient>
+                        </TouchableOpacity>
+                    </View>
                 </View>
             </KeyboardAvoidingView>
         </SafeAreaView>
@@ -272,96 +246,101 @@ export default function AskAIScreen() {
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#F7FFFD' },
+    container: { flex: 1, backgroundColor: '#F0F9F9' },
 
+    headerContainer: {
+        paddingHorizontal: 16, paddingTop: Platform.OS === 'ios' ? 0 : 10,
+        backgroundColor: '#F0F9F9', paddingBottom: 16,
+    },
     header: {
-        flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-        paddingHorizontal: 20, paddingVertical: 14,
+        paddingHorizontal: 16, paddingVertical: 14, borderRadius: 24,
+        ...SHADOWS.md,
     },
-    headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-    headerAvatar: { width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center' },
-    headerName: { fontSize: 16, fontWeight: '800', color: '#fff' },
-    onlineRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 },
-    onlineDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#34D399' },
-    onlineText: { fontSize: 12, color: 'rgba(255,255,255,0.55)', fontWeight: '500' },
+    headerTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+    headerTitleCenter: { alignItems: 'center', flex: 1 },
+    headerTitle: { fontSize: 20, fontWeight: '900', color: '#fff', letterSpacing: -0.5 },
+    headerSub: { fontSize: 10, color: 'rgba(255,255,255,0.8)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1.2 },
     clearBtn: {
-        width: 38, height: 38, borderRadius: 19,
-        backgroundColor: 'rgba(255,255,255,0.1)', justifyContent: 'center', alignItems: 'center',
-        borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)',
+        width: 32, height: 32, justifyContent: 'center', alignItems: 'center',
     },
 
-    messagesList: { paddingHorizontal: 16, paddingVertical: 16, gap: 12 },
+    messagesList: { paddingHorizontal: 16, paddingVertical: 20, gap: 16 },
 
-    msgRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 8, maxWidth: '88%' },
+    msgRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, maxWidth: '85%' },
     msgRowUser: { alignSelf: 'flex-end', flexDirection: 'row-reverse' },
 
     aiAvatar: {
-        width: 30, height: 30, borderRadius: 15,
-        justifyContent: 'center', alignItems: 'center', flexShrink: 0,
+        width: 32, height: 32, borderRadius: 10,
+        justifyContent: 'center', alignItems: 'center', flexShrink: 0, marginTop: 4,
+        ...SHADOWS.sm,
     },
 
     bubble: {
-        paddingHorizontal: 14, paddingVertical: 11, borderRadius: 20, flexShrink: 1,
-        ...SHADOWS.sm,
+        paddingHorizontal: 18, paddingVertical: 14, borderRadius: 24, flexShrink: 1,
+        ...SHADOWS.md,
     },
     bubbleAI: {
-        backgroundColor: '#fff', borderWidth: 1, borderColor: COLORS.border,
-        borderBottomLeftRadius: 5,
+        backgroundColor: '#FFFFFF', borderTopLeftRadius: 4,
+        borderWidth: 1, borderColor: 'rgba(226,232,240,0.5)',
+        borderLeftWidth: 4, borderLeftColor: COLORS.primary,
     },
     bubbleUser: {
-        borderBottomRightRadius: 5,
+        borderTopRightRadius: 4,
         backgroundColor: COLORS.primary,
+        shadowColor: COLORS.primary, shadowOpacity: 0.2, shadowRadius: 10,
     },
-    bubbleError: { backgroundColor: '#FEF2F2', borderColor: '#FECACA' },
-    bubbleText: { fontSize: 15, color: COLORS.textPrimary, lineHeight: 22 },
-    bubbleTextUser: { color: '#fff' },
-    bubbleTime: { fontSize: 10, color: COLORS.textMuted, marginTop: 6, alignSelf: 'flex-end' },
-    boldText: { fontWeight: '800', color: COLORS.textPrimary },
-    boldTextUser: { color: '#fff' },
+    bubbleError: { backgroundColor: '#FFF1F2', borderColor: '#FECACA', borderWidth: 1 },
+    bubbleText: { fontSize: 15, color: COLORS.textPrimary, lineHeight: 24, fontWeight: '500' },
+    bubbleTextUser: { color: '#FFFFFF', fontWeight: '600' },
+    bubbleTime: { fontSize: 10, color: COLORS.textMuted, marginTop: 8, alignSelf: 'flex-end', fontWeight: '700' },
+    boldText: { fontWeight: '800', color: COLORS.primaryDark },
+    boldTextUser: { color: '#FFFFFF', fontWeight: '900' },
     italicText: { fontStyle: 'italic', color: COLORS.textSecondary },
 
-    typingRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 8, marginTop: 4, paddingHorizontal: 16 },
-    typingBubble: {
-        flexDirection: 'row', alignItems: 'center', gap: 5,
-        backgroundColor: '#fff', paddingHorizontal: 16, paddingVertical: 14,
-        borderRadius: 20, borderBottomLeftRadius: 5, borderWidth: 1, borderColor: COLORS.border,
-    },
-    typingDot: { width: 7, height: 7, borderRadius: 3.5, backgroundColor: COLORS.primaryLight },
+    typingRow: { paddingHorizontal: 16, marginTop: -4 },
+    typingText: { fontSize: 12, color: COLORS.primary, fontStyle: 'italic', fontWeight: '700' },
 
-    suggestionsWrapper: { paddingTop: 8 },
+    suggestionsWrapper: { paddingBottom: 12 },
     suggestLabel: {
-        fontSize: 11, fontWeight: '700', color: COLORS.textSecondary,
-        paddingHorizontal: 16, marginBottom: 8, letterSpacing: 0.4,
+        fontSize: 10, fontWeight: '800', color: COLORS.textSecondary,
+        paddingHorizontal: 20, marginBottom: 12, letterSpacing: 1.2, textTransform: 'uppercase',
     },
-    suggList: { paddingHorizontal: 16, gap: 8, paddingBottom: 8 },
+    suggList: { paddingHorizontal: 16, gap: 10 },
     suggChip: {
-        flexDirection: 'row', alignItems: 'center', gap: 7,
-        backgroundColor: '#fff', paddingHorizontal: 14, paddingVertical: 10,
-        borderRadius: 22, borderWidth: 1, borderColor: COLORS.border, maxWidth: 220,
+        flexDirection: 'row', alignItems: 'center', gap: 10,
+        backgroundColor: '#FFFFFF', paddingHorizontal: 18, paddingVertical: 14,
+        borderRadius: 24, borderWidth: 1, borderColor: 'rgba(226,232,240,0.8)',
         ...SHADOWS.sm,
     },
-    suggEmoji: { fontSize: 14 },
-    suggText: { fontSize: 13, color: COLORS.textPrimary, fontWeight: '500', flexShrink: 1 },
+    suggEmoji: { fontSize: 16 },
+    suggText: { fontSize: 14, color: COLORS.textPrimary, fontWeight: '800', letterSpacing: -0.2 },
 
     disclaimer: {
-        flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4,
-        paddingHorizontal: 16, paddingVertical: 5,
+        flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
+        paddingVertical: 12,
     },
-    disclaimerText: { fontSize: 10, color: COLORS.textMuted },
+    disclaimerText: { fontSize: 10, color: COLORS.textMuted, fontWeight: '600' },
 
+    footer: {
+        backgroundColor: 'transparent',
+        paddingBottom: Platform.OS === 'ios' ? 34 : 20,
+    },
     inputBar: {
-        flexDirection: 'row', alignItems: 'flex-end', gap: 10,
-        paddingHorizontal: 16, paddingVertical: 12, paddingBottom: Platform.OS === 'ios' ? 24 : 12,
-        backgroundColor: '#fff', borderTopWidth: 1, borderTopColor: COLORS.border,
+        flexDirection: 'row', alignItems: 'flex-end', gap: 12,
+        paddingHorizontal: 12, paddingVertical: 8,
+        backgroundColor: '#fff', 
+        marginHorizontal: 16, borderRadius: 32,
+        borderWidth: 1, borderColor: 'rgba(226,232,240,0.8)',
+        ...SHADOWS.lg,
     },
     inputWrapper: {
-        flex: 1, backgroundColor: COLORS.lightGray, borderRadius: 22,
-        borderWidth: 1, borderColor: COLORS.border, paddingHorizontal: 16, paddingVertical: 10,
+        flex: 1, paddingHorizontal: 12, paddingVertical: 8,
     },
     textInput: {
-        fontSize: 15, color: COLORS.textPrimary, maxHeight: 100, lineHeight: 21,
+        fontSize: 15, color: COLORS.textPrimary, maxHeight: 150, lineHeight: 22,
+        fontWeight: '600',
     },
     sendBtn: { flexShrink: 0 },
-    sendGradient: { width: 46, height: 46, borderRadius: 23, justifyContent: 'center', alignItems: 'center' },
-    sendBtnDisabled: { opacity: 0.6 },
+    sendGradient: { width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center', ...SHADOWS.colored },
+    sendBtnDisabled: { opacity: 0.4 },
 });

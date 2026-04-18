@@ -120,7 +120,19 @@ async def explain_medication(medication_id: str, country: str = "India", currenc
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# ─── Times toggle ─────────────────────────────────────────────────────────────
+# ─── Times toggle & update ─────────────────────────────────────────────────────
+
+class TimeUpdateRequest(BaseModel):
+    time: str
+
+@router.put("/{medication_id}/times/{time_id}")
+async def update_time(medication_id: str, time_id: str, req: TimeUpdateRequest, db: Session = Depends(get_db)):
+    time_entry = db.query(models.MedicationTime).filter(models.MedicationTime.id == time_id).first()
+    if not time_entry:
+        raise HTTPException(status_code=404, detail="Time entry not found")
+    time_entry.time = req.time
+    db.commit()
+    return {"status": "success"}
 
 @router.put("/{medication_id}/times/{time_id}/toggle")
 async def toggle_time(medication_id: str, time_id: str, db: Session = Depends(get_db)):

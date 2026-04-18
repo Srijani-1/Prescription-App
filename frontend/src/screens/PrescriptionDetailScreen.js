@@ -3,7 +3,8 @@ import {
   View, Text, StyleSheet, TouchableOpacity, ScrollView, SafeAreaView, Animated, LayoutAnimation,
   UIManager, Platform, Dimensions,
 } from 'react-native';
-import { COLORS } from '../theme';
+import { COLORS, SHADOWS } from '../theme';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Feather, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { API_URL } from '../config';
 import { Image } from 'expo-image';
@@ -36,15 +37,15 @@ const MedicineCard = ({ item, index }) => {
     <View style={styles.medCard}>
       <TouchableOpacity style={styles.medHeader} onPress={toggle} activeOpacity={0.7}>
         <View style={styles.medHeaderLeft}>
-          <View style={styles.medIndex}>
-            <Text style={styles.medIndexText}>{index + 1}</Text>
-          </View>
+          <LinearGradient colors={['#0D9488', '#0891B2']} style={styles.medIndex}>
+            <MaterialCommunityIcons name="pill" size={14} color="#fff" />
+          </LinearGradient>
           <View style={{ flex: 1 }}>
             <Text style={styles.medName}>{medicineName}</Text>
             <Text style={styles.medBrief}>{dosage} · {frequency}</Text>
           </View>
         </View>
-        <Feather name={expanded ? 'chevron-up' : 'chevron-down'} size={20} color={COLORS.textSecondary} />
+        <Feather name={expanded ? 'chevron-up' : 'chevron-down'} size={20} color={COLORS.primary} />
       </TouchableOpacity>
 
       {expanded && (
@@ -173,8 +174,8 @@ export default function PrescriptionDetailScreen({ route, navigation }) {
         <View style={styles.centerState}>
           <Feather name="alert-circle" size={40} color={COLORS.textSecondary} />
           <Text style={styles.centerText}>Record not found</Text>
-          <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-            <Text style={styles.backBtnText}>Go Back</Text>
+          <TouchableOpacity style={styles.backBtn} onPress={() => navigation.navigate('PRESCRIPTION_TIMELINE')}>
+            <Text style={styles.backBtnText}>Back to Timeline</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -195,18 +196,25 @@ export default function PrescriptionDetailScreen({ route, navigation }) {
       <ScrollView contentContainerStyle={{ paddingBottom: 60 }} showsVerticalScrollIndicator={false}>
 
         {/* ── Header ── */}
-        <View style={styles.header}>
-          <TouchableOpacity
-            style={styles.headerBack}
-            onPress={() => navigation.goBack()}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        <View style={styles.headerContainer}>
+          <LinearGradient 
+            colors={['#0D9488', '#0891B2']} 
+            style={styles.header}
+            start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
           >
-            <Feather name="arrow-left" size={20} color={COLORS.textPrimary} />
-          </TouchableOpacity>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.headerTitle} numberOfLines={1}>{record.condition}</Text>
-            <Text style={styles.headerSub}>{formatDate(record.date)}</Text>
-          </View>
+            <TouchableOpacity
+              style={styles.headerBack}
+              onPress={() => navigation.navigate('PRESCRIPTION_TIMELINE')}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <Feather name="chevron-left" size={24} color="#fff" />
+            </TouchableOpacity>
+            <View style={styles.headerTitleCenter}>
+              <Text style={styles.headerTitle} numberOfLines={1}>{record.condition}</Text>
+              <Text style={styles.headerSub}>{formatDate(record.date)}</Text>
+            </View>
+            <View style={{ width: 32 }} />
+          </LinearGradient>
         </View>
 
         {/* ── Meta chips ── */}
@@ -326,18 +334,21 @@ const styles = StyleSheet.create({
   },
   backBtnText: { color: COLORS.white, fontWeight: '700' },
 
-  // Header
+  headerContainer: {
+    paddingHorizontal: 16, paddingTop: Platform.OS === 'ios' ? 0 : 10,
+    backgroundColor: '#F0F9F9', paddingBottom: 16,
+  },
   header: {
-    flexDirection: 'row', alignItems: 'center', gap: 12,
-    paddingHorizontal: 20, paddingTop: 20, paddingBottom: 12,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: 16, paddingVertical: 14, borderRadius: 24,
+    ...SHADOWS.md,
   },
+  headerTitleCenter: { alignItems: 'center', flex: 1 },
   headerBack: {
-    width: 38, height: 38, borderRadius: 10,
-    backgroundColor: COLORS.white, borderWidth: 1, borderColor: COLORS.border,
-    justifyContent: 'center', alignItems: 'center',
+    width: 32, height: 32, justifyContent: 'center', alignItems: 'center',
   },
-  headerTitle: { fontSize: 18, fontWeight: '800', color: COLORS.textPrimary },
-  headerSub: { fontSize: 12, color: COLORS.textSecondary, marginTop: 2 },
+  headerTitle: { fontSize: 18, fontWeight: '900', color: '#fff', letterSpacing: -0.4 },
+  headerSub: { fontSize: 10, color: 'rgba(255,255,255,0.8)', fontWeight: '700', textTransform: 'uppercase' },
 
   // Meta chips
   metaRow: {
@@ -418,21 +429,21 @@ const styles = StyleSheet.create({
 
   // Medicine Card
   medCard: {
-    borderWidth: 1, borderColor: COLORS.lightGray,
-    borderRadius: 14, marginBottom: 10, overflow: 'hidden',
+    backgroundColor: '#fff', borderRadius: 20, marginBottom: 12,
+    borderWidth: 1, borderColor: 'rgba(226,232,240,0.8)', ...SHADOWS.sm,
+    overflow: 'hidden',
   },
   medHeader: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    padding: 14, backgroundColor: COLORS.lightGray,
+    padding: 16,
   },
   medHeaderLeft: { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
   medIndex: {
-    width: 28, height: 28, borderRadius: 14,
-    backgroundColor: COLORS.successBg, justifyContent: 'center', alignItems: 'center',
+    width: 32, height: 32, borderRadius: 10,
+    justifyContent: 'center', alignItems: 'center',
   },
-  medIndexText: { color: COLORS.primary, fontWeight: '700', fontSize: 13 },
-  medName: { fontSize: 15, fontWeight: '700', color: COLORS.textPrimary },
-  medBrief: { fontSize: 12, color: COLORS.textSecondary, marginTop: 2 },
+  medName: { fontSize: 16, fontWeight: '800', color: COLORS.textPrimary, letterSpacing: -0.3 },
+  medBrief: { fontSize: 12, color: COLORS.textSecondary, marginTop: 2, fontWeight: '600' },
   medBody: {
     padding: 14, backgroundColor: COLORS.white,
     borderTopWidth: 1, borderTopColor: COLORS.lightGray,
