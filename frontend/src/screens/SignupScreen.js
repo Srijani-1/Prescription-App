@@ -70,7 +70,7 @@ const BackgroundShapes = ({ mouseX, mouseY }) => {
     <View style={StyleSheet.absoluteFill} pointerEvents="none">
       <Animated.View style={[styles.bgGlowTop, topTransform]}>
         <LinearGradient
-          colors={['#A7F3D0', '#BFDBFE', 'transparent']}
+          colors={['#97e3bfff', '#BFDBFE', 'transparent']}
           style={{ flex: 1, borderRadius: 1000 }}
         />
       </Animated.View>

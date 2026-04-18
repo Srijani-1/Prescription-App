@@ -76,7 +76,7 @@ export default function ProfileScreen({ user, setUser, navigate }) {
 
     const handleDelete = () => {
         showBanner(
-            'danger', 
+            'Danger', 
             "Delete Account", 
             "Are you sure you want to delete your account? This action cannot be undone and all your medical data will be lost.",
             executeDelete

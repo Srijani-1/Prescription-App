@@ -70,7 +70,7 @@
         </Animated.View>
         
         <Animated.View style={[styles.bgGlowBottom, layer2Transform]}>
-          <LinearGradient colors={['transparent', '#aecdf3ff', '#A7F3D0']} style={{ flex: 1, borderRadius: 1000 }} />
+          <LinearGradient colors={['transparent', '#95b3e8ff', '#A7F3D0']} style={{ flex: 1, borderRadius: 1000 }} />
         </Animated.View>
       </View>
     );
