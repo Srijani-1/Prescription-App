@@ -6,6 +6,7 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Feather, Ionicons } from '@expo/vector-icons';
+import { API_URL } from '../config';
 
 const { width, height } = Dimensions.get('window');
 
@@ -94,6 +95,9 @@ export default function SignupScreen({ navigate, setUser }) {
   const [focusedField, setFocusedField] = useState(null);
   const [agreed, setAgreed] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [otp, setOtp] = useState('');
+  const [pendingUserId, setPendingUserId] = useState(null);
+  const [errorMsg, setErrorMsg] = useState(null);
 
   const mouseX = useRef(new Animated.Value(0)).current;
   const mouseY = useRef(new Animated.Value(0)).current;
@@ -122,11 +126,60 @@ export default function SignupScreen({ navigate, setUser }) {
 
   const handleSignup = async () => {
     if (!name || !email || !password || !confirmPassword || !agreed) return;
+    if (password !== confirmPassword) {
+      setErrorMsg("Passwords do not match");
+      return;
+    }
+    setErrorMsg(null);
     setLoading(true);
-    setTimeout(() => { 
-        setLoading(false); 
-        setStep(2); 
-    }, 1500);
+
+    try {
+      const response = await fetch(`${API_URL}api/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ full_name: name, email, password })
+      });
+      const data = await response.json();
+      
+      if (response.ok) {
+        setPendingUserId(data.user_id);
+        setStep(2);
+      } else {
+        setErrorMsg(data.detail || "Registration failed");
+      }
+    } catch (err) {
+      setErrorMsg("Network error connecting to server");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerify = async () => {
+    if (!otp) return;
+    setErrorMsg(null);
+    setLoading(true);
+
+    try {
+      const response = await fetch(`${API_URL}api/auth/verify-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: pendingUserId, otp })
+      });
+      const data = await response.json();
+      
+      if (response.ok) {
+        if (setUser) {
+          setUser({ ...data.user, name: data.user.full_name, token: data.access_token });
+        }
+        navigate('DASHBOARD');
+      } else {
+        setErrorMsg(data.detail || "Invalid code");
+      }
+    } catch (err) {
+      setErrorMsg("Network error connecting to server");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -168,94 +221,120 @@ export default function SignupScreen({ navigate, setUser }) {
             <View style={styles.card}>
               <Text style={styles.cardHeader}>{step === 1 ? 'Personal Details' : 'Identity Verification'}</Text>
               
-              <View style={styles.inputWrapper}>
-                <Text style={styles.label}>Full Name</Text>
-                <View style={[styles.inputContainer, focusedField === 'name' && styles.inputActive]}>
-                  <TextInput
-                    style={styles.input}
-                    placeholder="E.g. Dr. Anya Sharma"
-                    placeholderTextColor="#A1A1AA"
-                    onFocus={() => setFocusedField('name')}
-                    onBlur={() => setFocusedField(null)}
-                    onChangeText={setName}
-                    value={name}
-                  />
-                </View>
-              </View>
-
-              <View style={[styles.inputWrapper, { marginTop: 16 }]}>
-                <Text style={styles.label}>Work Email</Text>
-                <View style={[styles.inputContainer, focusedField === 'email' && styles.inputActive]}>
-                  <TextInput
-                    style={styles.input}
-                    placeholder="anya@clinic.io"
-                    autoCapitalize="none"
-                    keyboardType="email-address"
-                    placeholderTextColor="#A1A1AA"
-                    onFocus={() => setFocusedField('email')}
-                    onBlur={() => setFocusedField(null)}
-                    onChangeText={setEmail}
-                    value={email}
-                  />
-                </View>
-              </View>
-
-              <View style={[styles.inputWrapper, { marginTop: 16 }]}>
-                <Text style={styles.label}>Password</Text>
-                <View style={[styles.inputContainer, focusedField === 'password' && styles.inputActive]}>
-                  <TextInput
-                    style={styles.input}
-                    secureTextEntry={!showPassword}
-                    placeholder="At least 8 characters"
-                    placeholderTextColor="#A1A1AA"
-                    onFocus={() => setFocusedField('password')}
-                    onBlur={() => setFocusedField(null)}
-                    onChangeText={setPassword}
-                    value={password}
-                  />
-                  <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeBtn}>
-                    <Ionicons name={showPassword ? "eye-outline" : "eye-off-outline"} size={20} color={THEME.textLight} />
-                  </TouchableOpacity>
-                </View>
-              </View>
-
-              {password.length > 0 && (
-                <View style={styles.strengthCont}>
-                  {[1, 2, 3].map((i) => (
-                    <View key={i} style={[styles.strengthBar, i <= getStrength() && { backgroundColor: getStrength() === 3 ? THEME.primary : '#FBBF24' }]} />
-                  ))}
-                  <Text style={styles.strengthText}>
-                    {getStrength() === 1 ? 'Weak' : getStrength() === 2 ? 'Good' : 'Strong'}
-                  </Text>
+              {errorMsg && (
+                <View style={{ marginBottom: 16 }}>
+                  <Text style={{ color: THEME.error || '#F43F5E', fontSize: 13 }}>{errorMsg}</Text>
                 </View>
               )}
 
-              <View style={[styles.inputWrapper, { marginTop: 16 }]}>
-                <Text style={styles.label}>Confirm Password</Text>
-                <View style={[styles.inputContainer, focusedField === 'confirm' && styles.inputActive]}>
-                  <TextInput
-                    style={styles.input}
-                    secureTextEntry={!showPassword}
-                    placeholder="Repeat your password"
-                    placeholderTextColor="#A1A1AA"
-                    onFocus={() => setFocusedField('confirm')}
-                    onBlur={() => setFocusedField(null)}
-                    onChangeText={setConfirmPassword}
-                    value={confirmPassword}
-                  />
-                </View>
-              </View>
+              {step === 1 ? (
+                <>
+                  <View style={styles.inputWrapper}>
+                    <Text style={styles.label}>Full Name</Text>
+                    <View style={[styles.inputContainer, focusedField === 'name' && styles.inputActive]}>
+                      <TextInput
+                        style={styles.input}
+                        placeholder="E.g. Dr. Anya Sharma"
+                        placeholderTextColor="#A1A1AA"
+                        onFocus={() => setFocusedField('name')}
+                        onBlur={() => setFocusedField(null)}
+                        onChangeText={setName}
+                        value={name}
+                      />
+                    </View>
+                  </View>
 
-              <TouchableOpacity style={styles.termsRow} onPress={() => setAgreed(!agreed)}>
-                <View style={[styles.checkbox, agreed && styles.checkboxActive]}>
-                  {agreed && <Feather name="check" size={12} color="#FFF" />}
+                  <View style={[styles.inputWrapper, { marginTop: 16 }]}>
+                    <Text style={styles.label}>Work Email</Text>
+                    <View style={[styles.inputContainer, focusedField === 'email' && styles.inputActive]}>
+                      <TextInput
+                        style={styles.input}
+                        placeholder="anya@clinic.io"
+                        autoCapitalize="none"
+                        keyboardType="email-address"
+                        placeholderTextColor="#A1A1AA"
+                        onFocus={() => setFocusedField('email')}
+                        onBlur={() => setFocusedField(null)}
+                        onChangeText={setEmail}
+                        value={email}
+                      />
+                    </View>
+                  </View>
+
+                  <View style={[styles.inputWrapper, { marginTop: 16 }]}>
+                    <Text style={styles.label}>Password</Text>
+                    <View style={[styles.inputContainer, focusedField === 'password' && styles.inputActive]}>
+                      <TextInput
+                        style={styles.input}
+                        secureTextEntry={!showPassword}
+                        placeholder="At least 8 characters"
+                        placeholderTextColor="#A1A1AA"
+                        onFocus={() => setFocusedField('password')}
+                        onBlur={() => setFocusedField(null)}
+                        onChangeText={setPassword}
+                        value={password}
+                      />
+                      <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeBtn}>
+                        <Ionicons name={showPassword ? "eye-outline" : "eye-off-outline"} size={20} color={THEME.textLight} />
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+
+                  {password.length > 0 && (
+                    <View style={styles.strengthCont}>
+                      {[1, 2, 3].map((i) => (
+                        <View key={i} style={[styles.strengthBar, i <= getStrength() && { backgroundColor: getStrength() === 3 ? THEME.primary : '#FBBF24' }]} />
+                      ))}
+                      <Text style={styles.strengthText}>
+                        {getStrength() === 1 ? 'Weak' : getStrength() === 2 ? 'Good' : 'Strong'}
+                      </Text>
+                    </View>
+                  )}
+
+                  <View style={[styles.inputWrapper, { marginTop: 16 }]}>
+                    <Text style={styles.label}>Confirm Password</Text>
+                    <View style={[styles.inputContainer, focusedField === 'confirm' && styles.inputActive]}>
+                      <TextInput
+                        style={styles.input}
+                        secureTextEntry={!showPassword}
+                        placeholder="Repeat your password"
+                        placeholderTextColor="#A1A1AA"
+                        onFocus={() => setFocusedField('confirm')}
+                        onBlur={() => setFocusedField(null)}
+                        onChangeText={setConfirmPassword}
+                        value={confirmPassword}
+                      />
+                    </View>
+                  </View>
+
+                  <TouchableOpacity style={styles.termsRow} onPress={() => setAgreed(!agreed)}>
+                    <View style={[styles.checkbox, agreed && styles.checkboxActive]}>
+                      {agreed && <Feather name="check" size={12} color="#FFF" />}
+                    </View>
+                    <Text style={styles.termsText}>I agree to the <Text style={styles.linkText}>Terms & Privacy</Text></Text>
+                  </TouchableOpacity>
+                </>
+              ) : (
+                <View style={[styles.inputWrapper, { marginTop: 16 }]}>
+                  <Text style={styles.label}>Verification Code (OTP)</Text>
+                  <View style={[styles.inputContainer, focusedField === 'otp' && styles.inputActive]}>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="6-digit code"
+                      placeholderTextColor="#A1A1AA"
+                      keyboardType="number-pad"
+                      onFocus={() => setFocusedField('otp')}
+                      onBlur={() => setFocusedField(null)}
+                      onChangeText={setOtp}
+                      value={otp}
+                    />
+                  </View>
                 </View>
-                <Text style={styles.termsText}>I agree to the <Text style={styles.linkText}>Terms & Privacy</Text></Text>
-              </TouchableOpacity>
+              )}
 
               <TouchableOpacity 
                 style={[styles.mainButton, (!agreed && step === 1) && { opacity: 0.5 }]} 
-                onPress={step === 1 ? handleSignup : () => navigate('DASHBOARD')}
+                onPress={step === 1 ? handleSignup : handleVerify}
                 disabled={loading}
               >
                 <LinearGradient 
