@@ -20,7 +20,7 @@ const THEME = {
   border: '#E5E7EB',
   focusedBorder: '#14B8A6', 
   white: '#FFFFFF',
-  shadowGlow: 'rgba(20, 184, 166, 0.15)',
+  shadowGlow: 'rgba(35, 170, 154, 0.14)',
 };
 
 // Background Shapes Component with Autonomous "Floating" + Cursor Tracking

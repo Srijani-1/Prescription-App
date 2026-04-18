@@ -51,7 +51,7 @@ export default function ProfileScreen({ user, setUser, navigate }) {
     };
 
     const handleLogout = () => {
-        showBanner('confirm', "Sign Out", "Are you sure you want to log out?", executeLogout);
+        showBanner('confirm', "Log Out", "Are you sure you want to log out?", executeLogout);
     };
 
     const executeDelete = async () => {
