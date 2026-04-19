@@ -18,7 +18,7 @@ python-jose[cryptography]
 fastapi-mail
 pydantic[email]
 requests
-httpx
 pytesseract
 rapidfuzz
 python-bidi==0.4.2
+bidi==0.0.1
