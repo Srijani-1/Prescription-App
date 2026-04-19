@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
   View, Text, TextInput, StyleSheet, TouchableOpacity,
-  SafeAreaView, KeyboardAvoidingView, Platform, ScrollView, 
+  SafeAreaView, KeyboardAvoidingView, Platform, ScrollView,
   ActivityIndicator, StatusBar, Animated, PanResponder, useWindowDimensions
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -72,7 +72,7 @@ const BackgroundShapes = ({ mouseX, mouseY, windowWidth, windowHeight }) => {
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="none">
       <Animated.View style={[
-        styles.bgGlowTop, 
+        styles.bgGlowTop,
         topTransform,
         {
           top: -windowHeight * 0.1,
@@ -86,9 +86,9 @@ const BackgroundShapes = ({ mouseX, mouseY, windowWidth, windowHeight }) => {
           style={{ flex: 1, borderRadius: 1000 }}
         />
       </Animated.View>
-      
+
       <Animated.View style={[
-        styles.bgGlowBottom, 
+        styles.bgGlowBottom,
         bottomTransform,
         {
           bottom: -windowHeight * 0.1,
@@ -119,7 +119,7 @@ export default function SignupScreen({ navigate, setUser }) {
   const [agreed, setAgreed] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState(null);
-  
+
   // Google Auth Request
   const [request, response, promptAsync] = Google.useAuthRequest({
     androidClientId: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID,
@@ -144,13 +144,13 @@ export default function SignupScreen({ navigate, setUser }) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          email: token === "demo-token" ? "user@google.com" : "verified_google_" + Date.now() + "@gmail.com", 
+          email: token === "demo-token" ? "user@google.com" : "verified_google_" + Date.now() + "@gmail.com",
           full_name: "Google User",
           provider: "google"
         })
       });
       const data = await resp.json();
-      
+
       if (resp.ok) {
         if (setUser) {
           setUser({ ...data.user, name: data.user.full_name, token: data.access_token });
@@ -215,7 +215,7 @@ export default function SignupScreen({ navigate, setUser }) {
     if (!password) { setErrorMsg("Password is required"); return; }
     if (!confirmPassword) { setErrorMsg("Please confirm your password"); return; }
     if (!agreed) { setErrorMsg("Please agree to the Terms & Conditions"); return; }
-    
+
     if (password !== confirmPassword) {
       setErrorMsg("Passwords do not match");
       return;
@@ -278,11 +278,11 @@ export default function SignupScreen({ navigate, setUser }) {
 
       {/* Interactive Layer */}
       <View style={StyleSheet.absoluteFill} {...panResponder.panHandlers}>
-        <BackgroundShapes 
-          mouseX={mouseX} 
-          mouseY={mouseY} 
-          windowWidth={windowWidth} 
-          windowHeight={windowHeight} 
+        <BackgroundShapes
+          mouseX={mouseX}
+          mouseY={mouseY}
+          windowWidth={windowWidth}
+          windowHeight={windowHeight}
         />
       </View>
 
@@ -297,7 +297,7 @@ export default function SignupScreen({ navigate, setUser }) {
             showsVerticalScrollIndicator={false}
             pointerEvents="box-none"
           >
-            
+
             {/* Constrained Inner Container for larger screens */}
             <View style={styles.innerContainer}>
               <View style={styles.header}>
@@ -310,15 +310,15 @@ export default function SignupScreen({ navigate, setUser }) {
               <View style={styles.introSection}>
                 <Text style={styles.title}>{step === 1 ? 'Start Your Care' : 'Verify Email'}</Text>
                 <Text style={styles.subtitle}>
-                  {step === 1 
-                    ? 'Join PrescribePal for intelligent healthcare support.' 
+                  {step === 1
+                    ? 'Join PrescribePal for intelligent healthcare support.'
                     : `Please check your Email (${email}) for the code.`}
                 </Text>
               </View>
 
               <View style={styles.card}>
                 <Text style={styles.cardHeader}>{step === 1 ? 'Personal Details' : 'Identity Verification'}</Text>
-                
+
                 {errorMsg && (
                   <View style={{ marginBottom: 16 }}>
                     <Text style={{ color: THEME.error || '#F43F5E', fontSize: 13 }}>{errorMsg}</Text>
@@ -430,13 +430,13 @@ export default function SignupScreen({ navigate, setUser }) {
                   </View>
                 )}
 
-                <TouchableOpacity 
-                  style={[styles.mainButton, (!agreed && step === 1) && { opacity: 0.5 }]} 
+                <TouchableOpacity
+                  style={[styles.mainButton, (!agreed && step === 1) && { opacity: 0.5 }]}
                   onPress={step === 1 ? handleSignup : handleVerify}
                   disabled={loading}
                 >
-                  <LinearGradient 
-                    colors={[THEME.primary, '#0D9488']} 
+                  <LinearGradient
+                    colors={[THEME.primary, '#0D9488']}
                     style={styles.gradient}
                     start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
                   >
@@ -448,12 +448,12 @@ export default function SignupScreen({ navigate, setUser }) {
                   </LinearGradient>
                 </TouchableOpacity>
               </View>
-
+            </View>
             <View style={styles.divider}>
               <View style={styles.line} /><Text style={styles.dividerText}>OR SIGN UP WITH</Text><View style={styles.line} />
             </View>
 
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.socialButton}
               onPress={onGoogleTap}
               disabled={loading}
@@ -478,20 +478,20 @@ export default function SignupScreen({ navigate, setUser }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  bgGlowTop: { 
-    position: 'absolute', 
-    opacity: 0.2 
+  bgGlowTop: {
+    position: 'absolute',
+    opacity: 0.2
   },
-  bgGlowBottom: { 
-    position: 'absolute', 
-    opacity: 0.15 
+  bgGlowBottom: {
+    position: 'absolute',
+    opacity: 0.15
   },
-  scrollContent: { 
-    flexGrow: 1, 
-    alignItems: 'center', 
+  scrollContent: {
+    flexGrow: 1,
+    alignItems: 'center',
     justifyContent: 'center', // Centers vertically on large displays
-    paddingBottom: 40, 
-    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight + 10 : 10 
+    paddingBottom: 40,
+    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight + 10 : 10
   },
   innerContainer: {
     width: '100%',

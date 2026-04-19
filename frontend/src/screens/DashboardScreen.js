@@ -59,6 +59,7 @@ const FEATURE_CARDS = [
 export default function DashboardScreen({ user, navigate }) {
     const [meds, setMeds] = useState([]);
     const [recentScans, setRecentScans] = useState([]);
+    const [medsLoaded, setMedsLoaded] = useState(false); // ← add this
     const fadeAnim = useRef(new Animated.Value(0)).current;
     const slideAnim = useRef(new Animated.Value(24)).current;
 
@@ -111,6 +112,7 @@ export default function DashboardScreen({ user, navigate }) {
                     });
                 });
                 setMeds(flat);
+                setMedsLoaded(true);
             }
         } catch (err) { console.error('Dashboard fetch error:', err); }
     };
@@ -134,7 +136,7 @@ export default function DashboardScreen({ user, navigate }) {
         return 'Good evening';
     };
 
-    const healthScore = meds.length === 0 ? 100 : Math.round(adherencePct);
+    const healthScore = !medsLoaded ? null : meds.length === 0 ? 100 : Math.round(adherencePct);
     const firstName = user?.name?.split(' ')[0] || user?.full_name?.split(' ')[0] || 'there';
 
     return (
@@ -184,7 +186,7 @@ export default function DashboardScreen({ user, navigate }) {
                         </View>
                         <View style={styles.scoreCircleWrap}>
                             <View style={styles.scoreCircle}>
-                                <Text style={styles.scoreCircleVal}>{healthScore}</Text>
+                                <Text style={styles.scoreCircleVal}>{healthScore ?? '--'}</Text>
                                 <Text style={styles.scoreCircleSub}>/ 100</Text>
                             </View>
                             <View style={styles.streakBadge}>

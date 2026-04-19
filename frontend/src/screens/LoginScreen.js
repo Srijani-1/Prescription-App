@@ -9,7 +9,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import * as WebBrowser from 'expo-web-browser';
 import * as Google from 'expo-auth-session/providers/google';
 import GoogleIcon from '../components/GoogleIcon';
-
+import { Dimensions } from 'react-native';
 import { API_URL } from '../config';
 
 WebBrowser.maybeCompleteAuthSession();
@@ -72,7 +72,7 @@ const BackgroundShapes = ({ mouseX, mouseY, windowWidth, windowHeight }) => {
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="none">
       <Animated.View style={[
-        styles.bgGlowTop, 
+        styles.bgGlowTop,
         layer1Transform,
         {
           top: -windowHeight * 0.1,
@@ -83,9 +83,9 @@ const BackgroundShapes = ({ mouseX, mouseY, windowWidth, windowHeight }) => {
       ]}>
         <LinearGradient colors={['#A7F3D0', '#BFDBFE', 'transparent']} style={{ flex: 1, borderRadius: 1000 }} />
       </Animated.View>
-      
+
       <Animated.View style={[
-        styles.bgGlowBottom, 
+        styles.bgGlowBottom,
         layer2Transform,
         {
           bottom: -windowHeight * 0.1,
@@ -102,7 +102,7 @@ const BackgroundShapes = ({ mouseX, mouseY, windowWidth, windowHeight }) => {
 
 export default function LoginScreen({ navigate, setUser }) {
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
-  
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -221,18 +221,18 @@ export default function LoginScreen({ navigate, setUser }) {
       <StatusBar barStyle="dark-content" transparent backgroundColor="transparent" />
 
       <View style={StyleSheet.absoluteFill} {...panResponder.panHandlers}>
-        <BackgroundShapes 
-          mouseX={mouseX} 
-          mouseY={mouseY} 
-          windowWidth={windowWidth} 
-          windowHeight={windowHeight} 
+        <BackgroundShapes
+          mouseX={mouseX}
+          mouseY={mouseY}
+          windowWidth={windowWidth}
+          windowHeight={windowHeight}
         />
       </View>
 
       <SafeAreaView style={{ flex: 1 }} pointerEvents="box-none">
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }} pointerEvents="box-none">
           <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} pointerEvents="box-none">
-            
+
             {/* Inner container centers the content and prevents stretching on large screens */}
             <View style={styles.innerContainer}>
               <View style={styles.header}>
@@ -248,7 +248,7 @@ export default function LoginScreen({ navigate, setUser }) {
 
               <View style={styles.card}>
                 <Text style={styles.cardHeader}>Login</Text>
-                
+
                 <View style={styles.inputWrapper}>
                   <Text style={styles.label}>Email</Text>
                   <View style={[styles.inputContainer, focusedField === 'email' && styles.inputActive]}>
@@ -293,25 +293,25 @@ export default function LoginScreen({ navigate, setUser }) {
                 </TouchableOpacity>
               </View>
 
-            <View style={styles.divider}>
-              <View style={styles.line} /><Text style={styles.dividerText}>OR SIGN IN WITH</Text><View style={styles.line} />
-            </View>
+              <View style={styles.divider}>
+                <View style={styles.line} /><Text style={styles.dividerText}>OR SIGN IN WITH</Text><View style={styles.line} />
+              </View>
 
-            <TouchableOpacity
-              style={styles.socialButton}
-              onPress={onGoogleTap}
-              disabled={loading}
-            >
-              <GoogleIcon size={20} />
-              <Text style={styles.socialButtonText}>Google</Text>
-            </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.socialButton}
+                onPress={onGoogleTap}
+                disabled={loading}
+              >
+                <GoogleIcon size={20} />
+                <Text style={styles.socialButtonText}>Google</Text>
+              </TouchableOpacity>
 
               <View style={styles.footer}>
                 <Text style={styles.footerText}>New here? </Text>
                 <TouchableOpacity onPress={() => navigate('SIGNUP')}><Text style={styles.footerLink}>Create Account</Text></TouchableOpacity>
               </View>
             </View>
-            
+
           </ScrollView>
         </KeyboardAvoidingView>
       </SafeAreaView>
@@ -323,12 +323,12 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   bgGlowTop: { position: 'absolute', opacity: 0.15 },
   bgGlowBottom: { position: 'absolute', opacity: 0.12 },
-  scrollContent: { 
-    flexGrow: 1, 
-    alignItems: 'center', 
+  scrollContent: {
+    flexGrow: 1,
+    alignItems: 'center',
     justifyContent: 'center', // Helps center content vertically on large screens
-    paddingBottom: 40, 
-    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight + 10 : 10 
+    paddingBottom: 40,
+    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight + 10 : 10
   },
   innerContainer: {
     width: '100%',
