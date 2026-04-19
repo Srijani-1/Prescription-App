@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import {
     View, Text, ScrollView, Image, TouchableOpacity, TextInput,
-    StyleSheet, Dimensions, Alert, ActivityIndicator
+    StyleSheet, Dimensions, Alert, ActivityIndicator, SafeAreaView
 } from 'react-native';
 import { API_URL } from '../config';
 
@@ -9,6 +9,13 @@ const { width: SCREEN_W } = Dimensions.get('window');
 
 export default function ConfirmMedicinesScreen({ route, navigation }) {
     const { imageUri, medicineHighlights, rawResult, country, currency, userId, memberId, prescriptionId, isEditing, image_hash } = route.params;
+
+    // Normalize: backend results may use "medicine" or "name" for the medicine name field
+    const normalizedResults = (rawResult?.results || []).map(r => ({
+        ...r,
+        name: r.name || r.medicine,
+    }));
+
     const [confirmed, setConfirmed] = useState(
         medicineHighlights.reduce((acc, m) => {
             acc[m.medicine] = true;
@@ -16,10 +23,10 @@ export default function ConfirmMedicinesScreen({ route, navigation }) {
         }, {})
     );
     const [editableMeds, setEditableMeds] = useState(
-        rawResult.results.reduce((acc, r) => {
+        normalizedResults.reduce((acc, r) => {
             acc[r.name] = { 
                 name: r.name,
-                dosage: r.dosage || '', 
+                dosage: r.dosage || r.dose || '', 
                 frequency: r.frequency || '',
                 duration: r.duration || ''
             };
@@ -78,12 +85,12 @@ export default function ConfirmMedicinesScreen({ route, navigation }) {
     };
 
     const handleConfirm = async () => {
-        const confirmedMeds = rawResult.results
+        const confirmedMeds = normalizedResults
             .filter(r => confirmed[r.name])
             .map(r => ({
                 name: editableMeds[r.name]?.name || r.name,
                 form: r.form,
-                dosage: editableMeds[r.name]?.dosage || r.dosage || '',
+                dosage: editableMeds[r.name]?.dosage || r.dosage || r.dose || '',
                 frequency: editableMeds[r.name]?.frequency || r.frequency || '',
                 duration: editableMeds[r.name]?.duration || r.duration || '',
             }));
@@ -115,9 +122,10 @@ export default function ConfirmMedicinesScreen({ route, navigation }) {
 
             if (res.ok && data.status === 'success') {
                 if (isEditing) {
-                    navigation.navigate('HISTORY');
+                    // Go back to History (pop Confirm off the stack)
+                    navigation.goBack();
                 } else {
-                    navigation.navigate('SCANNER', { analysisResult: data });
+                    navigation.goBack();
                 }
             } else {
                 Alert.alert('Error', data.message || 'Failed to save prescription.');
@@ -131,9 +139,17 @@ export default function ConfirmMedicinesScreen({ route, navigation }) {
     };
 
     return (
-        <View style={styles.container}>
-            <Text style={styles.header}>Review your prescription</Text>
-            <Text style={styles.sub}>Tap medicines to confirm or reject</Text>
+        <SafeAreaView style={styles.container}>
+            {/* Header with back button */}
+            <View style={styles.headerBar}>
+                <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
+                    <Text style={styles.backArrow}>←</Text>
+                </TouchableOpacity>
+                <View style={{ flex: 1 }}>
+                    <Text style={styles.header}>Review Prescription</Text>
+                    <Text style={styles.sub}>Tap medicines to confirm or reject</Text>
+                </View>
+            </View>
 
             {/* Image with overlaid bounding boxes */}
             {!imgError && imageUri ? (
@@ -265,14 +281,24 @@ export default function ConfirmMedicinesScreen({ route, navigation }) {
                     }
                 </TouchableOpacity>
             </View>
-        </View>
+        </SafeAreaView>
     );
 }
 
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: '#F9FAFB' },
-    header: { fontSize: 20, fontWeight: '600', color: '#111827', margin: 16, marginBottom: 2 },
-    sub: { fontSize: 13, color: '#6B7280', marginHorizontal: 16, marginBottom: 10 },
+    headerBar: {
+        flexDirection: 'row', alignItems: 'center', gap: 12,
+        paddingHorizontal: 16, paddingVertical: 12,
+        backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#E5E7EB',
+    },
+    backBtn: {
+        width: 38, height: 38, borderRadius: 19,
+        backgroundColor: '#F3F4F6', justifyContent: 'center', alignItems: 'center',
+    },
+    backArrow: { fontSize: 20, color: '#374151' },
+    header: { fontSize: 17, fontWeight: '700', color: '#111827' },
+    sub: { fontSize: 12, color: '#6B7280', marginTop: 1 },
     imageContainer: { width: '100%', height: 260, backgroundColor: 'transparent', position: 'relative', marginVertical: 4 },
     image: { width: '100%', height: '100%' },
     bbox: { position: 'absolute', borderWidth: 2, borderRadius: 4 },
