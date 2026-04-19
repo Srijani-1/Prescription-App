@@ -21,4 +21,3 @@ requests
 pytesseract
 rapidfuzz
 python-bidi==0.4.2
-bidi==0.0.1
