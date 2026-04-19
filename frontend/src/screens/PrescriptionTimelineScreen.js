@@ -8,7 +8,7 @@ import { COLORS, GRADIENTS, SHADOWS } from '../theme';
 import { MaterialCommunityIcons, Feather, Ionicons } from '@expo/vector-icons';
 import { API_URL } from '../config';
 
-// ─── Helper ────────────────────────────────────────────────────────────────────
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 const formatDate = (d) => {
     const date = new Date(d);
     return date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
@@ -28,34 +28,22 @@ const formatRelative = (d) => {
 
 // ─── Timeline Event Card ────────────────────────────────────────────────────────
 const TimelineEvent = ({ item, isLast, onPress }) => {
-    const isScan = item.type === 'scan';
-    const colors = isScan ? GRADIENTS.teal : GRADIENTS.purple;
+    // We use a single consistent theme since type badges are removed
+    const accentColor = GRADIENTS.teal;
 
     return (
         <TouchableOpacity style={tc.wrap} onPress={onPress} activeOpacity={0.8}>
-            {/* Vertical line */}
             <View style={tc.lineCol}>
-                <LinearGradient colors={colors} style={tc.dot} />
+                <LinearGradient colors={accentColor} style={tc.dot} />
                 {!isLast && <View style={tc.line} />}
             </View>
 
-            {/* Content */}
             <View style={tc.card}>
                 <View style={tc.cardTop}>
                     <View style={{ flex: 1 }}>
                         <Text style={tc.dateText}>{formatRelative(item.date)}</Text>
                         <Text style={tc.titleText} numberOfLines={1}>{item.title}</Text>
                         {item.subtitle ? <Text style={tc.subtitle} numberOfLines={1}>{item.subtitle}</Text> : null}
-                    </View>
-                    <View style={[tc.typeBadge, { backgroundColor: isScan ? COLORS.successBg : '#F0EEFF' }]}>
-                        <MaterialCommunityIcons
-                            name={isScan ? 'scan-helper' : 'pill'}
-                            size={12}
-                            color={isScan ? COLORS.primary : '#7C3AED'}
-                        />
-                        <Text style={[tc.typeText, { color: isScan ? COLORS.primary : '#7C3AED' }]}>
-                            {isScan ? 'Rx Scan' : 'Manual'}
-                        </Text>
                     </View>
                 </View>
 
@@ -74,11 +62,11 @@ const TimelineEvent = ({ item, isLast, onPress }) => {
                     </View>
                 )}
 
-                {item.confidence != null && (
+                {item.confidence != null && item.type === 'scan' && (
                     <View style={tc.confRow}>
                         <Feather name="bar-chart-2" size={11} color={COLORS.textMuted} />
                         <Text style={tc.confText}>
-                            {Math.round(item.confidence * (item.confidence <= 1 ? 100 : 1))}% OCR confidence
+                            {Math.round(item.confidence * (item.confidence <= 1 ? 100 : 1))}% Analysis Accuracy
                         </Text>
                     </View>
                 )}
@@ -101,13 +89,8 @@ const tc = StyleSheet.create({
     },
     cardTop: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, marginBottom: 8 },
     dateText: { fontSize: 11, fontWeight: '600', color: COLORS.textMuted, marginBottom: 2 },
-    titleText: { fontSize: 14, fontWeight: '800', color: COLORS.textPrimary },
+    titleText: { fontSize: 15, fontWeight: '800', color: COLORS.textPrimary },
     subtitle: { fontSize: 12, color: COLORS.textSecondary, marginTop: 2 },
-    typeBadge: {
-        flexDirection: 'row', alignItems: 'center', gap: 4,
-        paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8,
-    },
-    typeText: { fontSize: 10, fontWeight: '700' },
     medRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 5, marginBottom: 6 },
     medChip: {
         flexDirection: 'row', alignItems: 'center', gap: 4,
@@ -121,36 +104,14 @@ const tc = StyleSheet.create({
     arrow: { position: 'absolute', right: 12, top: 18 },
 });
 
-// ─── Filter Tab ─────────────────────────────────────────────────────────────────
-const FilterTab = ({ label, active, onPress }) => (
-    <TouchableOpacity
-        style={[ft.tab, active && ft.tabActive]}
-        onPress={onPress}
-        activeOpacity={0.8}
-    >
-        <Text style={[ft.tabText, active && ft.tabTextActive]}>{label}</Text>
-    </TouchableOpacity>
-);
-
-const ft = StyleSheet.create({
-    tab: {
-        paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20,
-        backgroundColor: COLORS.white, borderWidth: 1, borderColor: COLORS.border,
-    },
-    tabActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
-    tabText: { fontSize: 13, fontWeight: '600', color: COLORS.textSecondary },
-    tabTextActive: { color: '#fff' },
-});
-
 // ─── Stats Header ───────────────────────────────────────────────────────────────
-const StatsRow = ({ total, thisMonth, meds }) => (
-    <LinearGradient colors={['#0F766E', '#0891B2']} style={stats.card}>
+const StatsRow = ({ total, meds }) => (
+    <LinearGradient colors={['#134E4A', '#0F766E']} style={stats.card}>
         {[
-            { value: total, label: 'Total Rx' },
-            { value: thisMonth, label: 'This Month' },
-            { value: meds, label: 'Total Meds' },
+            { value: total, label: 'Total Records' },
+            { value: meds, label: 'Total Medicines' },
         ].map((s, i) => (
-            <View key={i} style={[stats.item, i < 2 && stats.itemBorder]}>
+            <View key={i} style={[stats.item, i === 0 && stats.itemBorder]}>
                 <Text style={stats.val}>{s.value}</Text>
                 <Text style={stats.label}>{s.label}</Text>
             </View>
@@ -159,25 +120,17 @@ const StatsRow = ({ total, thisMonth, meds }) => (
 );
 
 const stats = StyleSheet.create({
-    card: {
-        flexDirection: 'row', marginHorizontal: 20, borderRadius: 18,
-        padding: 16, marginBottom: 20,
-    },
+    card: { flexDirection: 'row', marginHorizontal: 20, borderRadius: 18, padding: 16, marginBottom: 20 },
     item: { flex: 1, alignItems: 'center' },
     itemBorder: { borderRightWidth: 1, borderRightColor: 'rgba(255,255,255,0.2)' },
     val: { fontSize: 26, fontWeight: '900', color: '#fff' },
-    label: { fontSize: 11, color: 'rgba(255,255,255,0.6)', fontWeight: '600', marginTop: 3, textAlign: 'center' },
+    label: { fontSize: 11, color: 'rgba(255,255,255,0.6)', fontWeight: '600', marginTop: 3 },
 });
 
 // ─── Main Screen ────────────────────────────────────────────────────────────────
-const FILTERS = ['All', 'Scans', 'Manual'];
-
 export default function PrescriptionTimelineScreen({ user, navigate, goBack, memberId: propMemberId, memberName: propMemberName }) {
-    const [activeMemberId, setActiveMemberId] = useState(propMemberId || null);
-    const [activeMemberName, setActiveMemberName] = useState(propMemberName || null);
     const [history, setHistory] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [filter, setFilter] = useState('All');
     const fadeAnim = useRef(new Animated.Value(0)).current;
 
     useEffect(() => {
@@ -189,39 +142,20 @@ export default function PrescriptionTimelineScreen({ user, navigate, goBack, mem
         if (!user?.id) { setLoading(false); return; }
         try {
             let url = `${API_URL}api/prescriptions/history?user_id=${user.id}`;
-            if (activeMemberId) url += `&member_id=${activeMemberId}`;
+            if (propMemberId) url += `&member_id=${propMemberId}`;
             const res = await fetch(url);
             const data = await res.json();
             if (data.status === 'success') {
-                setHistory(data.history.map(item => {
-                    const isManual = item.country === 'Manual';
-                    return {
-                        id: item.id,
-                        date: item.date,
-                        type: isManual ? 'manual' : 'scan',
-                        title: item.results?.[0]?.explanation?.medicine_class || (isManual ? 'Health Record' : 'Rx Scan'),
-                        subtitle: `${item.results?.length || 0} medicine${item.results?.length !== 1 ? 's' : ''}${isManual ? ' · Added manually' : ` · ${item.country || 'Scanned'}`}`,
-                        medicines: item.results?.map(r => r.medicine) || [],
-                        confidence: item.avg_confidence,
-                        image_url: item.image_url,
-                        fullRecord: {
-                            id: item.id,
-                            date: item.date,
-                            condition: item.results?.[0]?.explanation?.medicine_class || 'General Checkup',
-                            doctor: item.results?.[0]?.explanation?.brand_name || 'Prescription Scan',
-                            medicines: item.results?.map(r => r.medicine) || [],
-                            fullResults: item.results,
-                            notes: item.results?.[0]?.explanation?.what_it_does || item.raw_text?.substring(0, 100),
-                            image_url: item.image_url
-                                ? (item.image_url.startsWith('http') ? item.image_url : `${API_URL.replace(/\/$/, '')}${item.image_url}`)
-                                : null,
-                            raw_text: item.raw_text,
-                            avg_confidence: item.avg_confidence,
-                            country: item.country,
-                            currency: item.currency,
-                        },
-                    };
-                }));
+                setHistory(data.history.map(item => ({
+                    id: item.id,
+                    date: item.date,
+                    type: item.country === 'Manual' ? 'manual' : 'scan',
+                    title: item.results?.[0]?.explanation?.medicine_class || 'Medical Visit',
+                    subtitle: `${item.results?.length || 0} items identified`,
+                    medicines: item.results?.map(r => r.medicine) || [],
+                    confidence: item.avg_confidence,
+                    fullRecord: { ...item } // Store full data for detail screen
+                })));
             }
         } catch (e) {
             console.error('Timeline fetch error', e);
@@ -230,23 +164,11 @@ export default function PrescriptionTimelineScreen({ user, navigate, goBack, mem
         }
     };
 
-    const filtered = history.filter(h => {
-        if (filter === 'Scans') return h.type === 'scan';
-        if (filter === 'Manual') return h.type === 'manual';
-        return true;
-    });
-
-    const thisMonth = history.filter(h => {
-        const d = new Date(h.date);
-        const now = new Date();
-        return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
-    }).length;
-
     const totalMeds = history.reduce((a, h) => a + (h.medicines?.length || 0), 0);
 
     // Group by month
     const grouped = {};
-    filtered.forEach(h => {
+    history.forEach(h => {
         const key = new Date(h.date).toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
         if (!grouped[key]) grouped[key] = [];
         grouped[key].push(h);
@@ -256,34 +178,25 @@ export default function PrescriptionTimelineScreen({ user, navigate, goBack, mem
         <SafeAreaView style={styles.container}>
             <StatusBar barStyle="light-content" backgroundColor={COLORS.midnight} />
 
-            {/* Header */}
             <LinearGradient colors={GRADIENTS.hero} style={styles.header}>
                 <View style={styles.bgDeco} />
                 <View style={styles.headerTop}>
                     <TouchableOpacity onPress={() => goBack()} style={styles.backBtn}>
-                        <Feather name="arrow-left" size={20} color="rgba(255,255,255,0.8)" />
+                        <Feather name="arrow-left" size={20} color="#fff" />
                     </TouchableOpacity>
                     <View style={{ flex: 1, paddingLeft: 14 }}>
-                        <Text style={styles.headerTitle}>{activeMemberName ? `${activeMemberName}'s Timeline` : 'Prescription Timeline'}</Text>
-                        <Text style={styles.headerSub}>{activeMemberName ? `History for ${activeMemberName}` : 'Your complete medical history'}</Text>
+                        <Text style={styles.headerTitle}>{propMemberName ? `${propMemberName}'s Timeline` : 'Health Timeline'}</Text>
+                        <Text style={styles.headerSub}>Complete record of medications</Text>
                     </View>
                     <TouchableOpacity style={styles.refreshBtn} onPress={fetchHistory}>
-                        <Feather name="refresh-cw" size={16} color="rgba(255,255,255,0.8)" />
+                        <Feather name="refresh-cw" size={16} color="#fff" />
                     </TouchableOpacity>
                 </View>
-
-                {/* Filter tabs */}
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow}>
-                    {FILTERS.map(f => (
-                        <FilterTab key={f} label={f} active={filter === f} onPress={() => setFilter(f)} />
-                    ))}
-                </ScrollView>
             </LinearGradient>
 
             {loading ? (
                 <View style={styles.centerBox}>
                     <ActivityIndicator size="large" color={COLORS.primary} />
-                    <Text style={styles.loadingText}>Loading your history...</Text>
                 </View>
             ) : (
                 <Animated.ScrollView
@@ -291,25 +204,17 @@ export default function PrescriptionTimelineScreen({ user, navigate, goBack, mem
                     contentContainerStyle={{ paddingBottom: 60, paddingTop: 20 }}
                     showsVerticalScrollIndicator={false}
                 >
-                    {/* Stats */}
-                    <StatsRow total={history.length} thisMonth={thisMonth} meds={totalMeds} />
+                    <StatsRow total={history.length} meds={totalMeds} />
 
-                    {filtered.length === 0 ? (
+                    {history.length === 0 ? (
                         <View style={styles.emptyBox}>
-                            <MaterialCommunityIcons name="timeline-outline" size={48} color={COLORS.border} />
-                            <Text style={styles.emptyTitle}>No prescriptions yet</Text>
-                            <Text style={styles.emptyText}>Scan your first prescription to start your health timeline</Text>
-                            <TouchableOpacity style={styles.scanCta} onPress={() => navigate('SCANNER')}>
-                                <LinearGradient colors={GRADIENTS.teal} style={styles.scanCtaGrad}>
-                                    <Feather name="camera" size={16} color="#fff" />
-                                    <Text style={styles.scanCtaText}>Scan Prescription</Text>
-                                </LinearGradient>
-                            </TouchableOpacity>
+                            <MaterialCommunityIcons name="calendar-clock" size={48} color={COLORS.border} />
+                            <Text style={styles.emptyTitle}>No history yet</Text>
+                            <Text style={styles.emptyText}>Your timeline will appear here once you add a record.</Text>
                         </View>
                     ) : (
                         Object.entries(grouped).map(([month, items]) => (
                             <View key={month}>
-                                {/* Month divider */}
                                 <View style={styles.monthRow}>
                                     <View style={styles.monthLine} />
                                     <Text style={styles.monthLabel}>{month}</Text>
@@ -335,45 +240,18 @@ export default function PrescriptionTimelineScreen({ user, navigate, goBack, mem
 
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: COLORS.background },
-    header: { paddingBottom: 16, overflow: 'hidden', position: 'relative' },
-    bgDeco: {
-        position: 'absolute', width: 200, height: 200, borderRadius: 100,
-        backgroundColor: 'rgba(13,148,136,0.1)', top: -60, right: -60,
-    },
-    headerTop: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 24, paddingTop: 20, paddingBottom: 14 },
-    backBtn: {
-        width: 40, height: 40, borderRadius: 20,
-        backgroundColor: 'rgba(255,255,255,0.1)', justifyContent: 'center', alignItems: 'center',
-        borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)',
-    },
-    refreshBtn: {
-        width: 40, height: 40, borderRadius: 20,
-        backgroundColor: 'rgba(255,255,255,0.1)', justifyContent: 'center', alignItems: 'center',
-        borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)',
-    },
+    header: { paddingBottom: 24, overflow: 'hidden' },
+    bgDeco: { position: 'absolute', width: 200, height: 200, borderRadius: 100, backgroundColor: 'rgba(255,255,255,0.05)', top: -60, right: -60 },
+    headerTop: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 24, paddingTop: 20 },
+    backBtn: { width: 40, height: 40, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.15)', justifyContent: 'center', alignItems: 'center' },
+    refreshBtn: { width: 40, height: 40, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.15)', justifyContent: 'center', alignItems: 'center' },
     headerTitle: { fontSize: 20, fontWeight: '900', color: '#fff' },
-    headerSub: { fontSize: 12, color: 'rgba(255,255,255,0.5)', marginTop: 1 },
-    filterRow: { paddingHorizontal: 20, gap: 8, paddingBottom: 4 },
-
-    centerBox: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
-    loadingText: { fontSize: 14, color: COLORS.textSecondary, fontWeight: '600' },
-
-    monthRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, marginBottom: 12, gap: 10 },
+    headerSub: { fontSize: 12, color: 'rgba(255,255,255,0.6)', marginTop: 2 },
+    centerBox: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+    monthRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, marginBottom: 15, gap: 10 },
     monthLine: { flex: 1, height: 1, backgroundColor: COLORS.border },
-    monthLabel: {
-        fontSize: 12, fontWeight: '700', color: COLORS.textMuted,
-        backgroundColor: COLORS.background, paddingHorizontal: 8,
-    },
-
-    emptyBox: {
-        alignItems: 'center', padding: 40, gap: 10,
-        marginHorizontal: 20, marginTop: 20,
-        backgroundColor: COLORS.white, borderRadius: 24,
-        borderWidth: 1, borderColor: COLORS.border,
-    },
-    emptyTitle: { fontSize: 18, fontWeight: '800', color: COLORS.textPrimary },
-    emptyText: { fontSize: 13, color: COLORS.textSecondary, textAlign: 'center', lineHeight: 20 },
-    scanCta: { marginTop: 8, borderRadius: 14, overflow: 'hidden' },
-    scanCtaGrad: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 24, paddingVertical: 13 },
-    scanCtaText: { fontSize: 15, fontWeight: '800', color: '#fff' },
+    monthLabel: { fontSize: 11, fontWeight: '800', color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: 0.5 },
+    emptyBox: { alignItems: 'center', padding: 40, marginTop: 40 },
+    emptyTitle: { fontSize: 18, fontWeight: '800', color: COLORS.textPrimary, marginTop: 15 },
+    emptyText: { fontSize: 13, color: COLORS.textSecondary, textAlign: 'center', marginTop: 8 },
 });
