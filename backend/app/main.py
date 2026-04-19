@@ -24,6 +24,7 @@ from app.structurer import structure_medicines
 from app.explain import explain_medicine
 from app.llm import call_llm_chat, call_llm, call_llm_vision
 import math
+
 # ─── Models ───────────────────────────────────────────────────────────────
 
 class ChatMessage(BaseModel):
