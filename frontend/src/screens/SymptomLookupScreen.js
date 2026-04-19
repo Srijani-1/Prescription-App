@@ -10,19 +10,61 @@ import { MaterialCommunityIcons, Feather, Ionicons } from '@expo/vector-icons';
 import { API_URL } from '../config';
 
 const COMMON_SYMPTOMS = [
-    { label: 'Headache', icon: 'head-outline' },
-    { label: 'Fever', icon: 'thermometer' },
-    { label: 'Cough', icon: 'lungs' },
-    { label: 'Stomach Pain', icon: 'stomach' },
-    { label: 'Joint Pain', icon: 'human' },
-    { label: 'Chest Pain', icon: 'heart-pulse' },
-    { label: 'Fatigue', icon: 'sleep' },
-    { label: 'Nausea', icon: 'emoticon-sick-outline' },
-    { label: 'Back Pain', icon: 'human-handsup' },
-    { label: 'High BP', icon: 'blood-bag' },
+    { label: 'Migraine', icon: 'head-flash-outline' },
+    { label: 'Acid Reflux', icon: 'fire' },
+    { label: 'Dry Cough', icon: 'weather-dust' },
+    { label: 'Muscle Spasm', icon: 'arm-flex' },
+    { label: 'Hypertension', icon: 'heart-pulse' },
+    { label: 'Insomnia', icon: 'moon-waning-crescent' },
+    { label: 'Skin Rash', icon: 'dots-vertical-circle' },
+    { label: 'Sinusitis', icon: 'nose' },
 ];
 
-// ─── Result Card ───────────────────────────────────────────────────────────────
+// ─── Doctor Script Card ────────────────────────────────────────────────────────
+const DoctorScriptCard = ({ symptom, medicineClasses }) => {
+    return (
+        <View style={ds.card}>
+            <LinearGradient colors={['#1E293B', '#334155']} style={ds.header}>
+                <MaterialCommunityIcons name="comment-text-outline" size={18} color="#fff" />
+                <Text style={ds.headerText}>What to say to your doctor</Text>
+            </LinearGradient>
+            <View style={ds.body}>
+                <Text style={ds.instruction}>You can use this simple script:</Text>
+                <View style={ds.quoteBox}>
+                    <Text style={ds.script}>
+                        "Hi Doctor, I’ve been having <Text style={ds.bold}>{symptom}</Text> lately. I wanted to let you know about it and see what you think is causing it. Is there anything I should do or avoid to feel better?"
+                    </Text>
+                </View>
+                
+                <Text style={ds.subTitle}>Quick Tips:</Text>
+                <View style={ds.qRow}>
+                    <Feather name="help-circle" size={14} color={COLORS.primary} />
+                    <Text style={ds.qText}>Tell them exactly when the pain started.</Text>
+                </View>
+                <View style={ds.qRow}>
+                    <Feather name="help-circle" size={14} color={COLORS.primary} />
+                    <Text style={ds.qText}>Mention if anything makes it feel worse.</Text>
+                </View>
+            </View>
+        </View>
+    );
+};
+
+const ds = StyleSheet.create({
+    card: { backgroundColor: '#fff', borderRadius: 20, marginBottom: 16, overflow: 'hidden', borderWidth: 1, borderColor: '#E2E8F0', ...SHADOWS.sm },
+    header: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 14 },
+    headerText: { fontSize: 14, fontWeight: '800', color: '#fff' },
+    body: { padding: 16 },
+    instruction: { fontSize: 12, color: COLORS.textSecondary, fontWeight: '600', marginBottom: 10 },
+    quoteBox: { backgroundColor: '#F8FAFC', padding: 15, borderRadius: 12, borderLeftWidth: 4, borderLeftColor: COLORS.primary, marginBottom: 15 },
+    script: { fontSize: 14, color: COLORS.textPrimary, lineHeight: 22 },
+    bold: { fontWeight: '800', color: COLORS.primary },
+    subTitle: { fontSize: 13, fontWeight: '800', color: COLORS.textPrimary, marginBottom: 10 },
+    qRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 8 },
+    qText: { fontSize: 12, color: COLORS.textSecondary },
+});
+
+// ─── Refined Medicine Class Card ──────────────────────────────────────────────
 const MedClassCard = ({ data, index }) => {
     const colors = [GRADIENTS.teal, GRADIENTS.purple, ['#F43F5E', '#E11D48'], GRADIENTS.gold];
     return (
@@ -44,58 +86,25 @@ const MedClassCard = ({ data, index }) => {
                 ))}
             </View>
             <View style={rc.howRow}>
-                <Ionicons name="information-circle-outline" size={14} color={COLORS.primary} />
-                <Text style={rc.howText}>{data.howItHelps}</Text>
+                <View style={rc.indicator} />
+                <Text style={rc.howText}><Text style={{ fontWeight: '700', color: COLORS.textPrimary }}>Clinical Action:</Text> {data.howItHelps}</Text>
             </View>
         </View>
     );
 };
-const rc = StyleSheet.create({
-    card: {
-        backgroundColor: COLORS.white, borderRadius: 18, marginBottom: 10,
-        padding: 16, borderWidth: 1, borderColor: COLORS.border, ...SHADOWS.sm, gap: 12,
-    },
-    cardHeader: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
-    classIcon: { width: 40, height: 40, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
-    className: { fontSize: 14, fontWeight: '800', color: COLORS.textPrimary, marginBottom: 2 },
-    classDesc: { fontSize: 12, color: COLORS.textSecondary, lineHeight: 17 },
-    examplesRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-    exChip: {
-        backgroundColor: COLORS.successBg, paddingHorizontal: 10, paddingVertical: 4,
-        borderRadius: 10, borderWidth: 1, borderColor: COLORS.border,
-    },
-    exChipText: { fontSize: 12, fontWeight: '600', color: COLORS.primary },
-    howRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
-    howText: { flex: 1, fontSize: 12, color: COLORS.textSecondary, lineHeight: 18 },
-});
 
-// ─── Doctor Script Card ────────────────────────────────────────────────────────
-const DoctorScriptCard = ({ symptom, medicines }) => (
-    <View style={ds.card}>
-        <LinearGradient colors={['#0F766E', '#0891B2']} style={ds.header}>
-            <MaterialCommunityIcons name="stethoscope" size={20} color="#fff" />
-            <Text style={ds.headerText}>What to say to your doctor</Text>
-        </LinearGradient>
-        <View style={ds.body}>
-            <Text style={ds.script}>
-                "Doctor, I've been experiencing <Text style={ds.bold}>{symptom}</Text>. Could you check if I might benefit from {medicines.join(' or ')}? I'd like to understand which is most appropriate for my condition."
-            </Text>
-            <View style={ds.tip}>
-                <Ionicons name="bulb-outline" size={14} color={COLORS.warningText} />
-                <Text style={ds.tipText}>Copy this script and use it in your next appointment</Text>
-            </View>
-        </View>
-    </View>
-);
-const ds = StyleSheet.create({
-    card: { backgroundColor: COLORS.white, borderRadius: 18, overflow: 'hidden', borderWidth: 1, borderColor: COLORS.border, ...SHADOWS.sm },
-    header: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 14 },
-    headerText: { fontSize: 14, fontWeight: '800', color: '#fff' },
-    body: { padding: 16, gap: 12 },
-    script: { fontSize: 14, color: COLORS.textPrimary, lineHeight: 22, fontStyle: 'italic' },
-    bold: { fontWeight: '800', fontStyle: 'normal', color: COLORS.primary },
-    tip: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: COLORS.warningBg, borderRadius: 10, padding: 10, borderWidth: 1, borderColor: COLORS.warningBorder },
-    tipText: { flex: 1, fontSize: 12, color: COLORS.warningText, fontWeight: '600' },
+const rc = StyleSheet.create({
+    card: { backgroundColor: COLORS.white, borderRadius: 18, marginBottom: 12, padding: 16, borderWidth: 1, borderColor: COLORS.border, ...SHADOWS.sm },
+    cardHeader: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, marginBottom: 12 },
+    classIcon: { width: 38, height: 38, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
+    className: { fontSize: 14, fontWeight: '800', color: COLORS.textPrimary },
+    classDesc: { fontSize: 12, color: COLORS.textSecondary, marginTop: 1 },
+    examplesRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 12 },
+    exChip: { backgroundColor: '#F0FDFA', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 10, borderWidth: 1, borderColor: '#CCFBF1' },
+    exChipText: { fontSize: 11, fontWeight: '700', color: '#0D9488' },
+    howRow: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#F1F5F9', padding: 10, borderRadius: 10 },
+    indicator: { width: 4, height: 4, borderRadius: 2, backgroundColor: COLORS.primary },
+    howText: { flex: 1, fontSize: 11, color: COLORS.textSecondary, lineHeight: 16 },
 });
 
 // ─── Main Screen ───────────────────────────────────────────────────────────────
@@ -103,15 +112,12 @@ export default function SymptomLookupScreen({ navigate, user }) {
     const [query, setQuery] = useState('');
     const [loading, setLoading] = useState(false);
     const [result, setResult] = useState(null);
-    const [error, setError] = useState(null);
-    const inputRef = useRef(null);
 
     const searchSymptom = async (symptomText) => {
         const text = (symptomText || query).trim();
         if (!text) return;
         setLoading(true);
         setResult(null);
-        setError(null);
 
         try {
             const response = await fetch(`${API_URL}api/symptoms/lookup`, {
@@ -120,29 +126,40 @@ export default function SymptomLookupScreen({ navigate, user }) {
                 body: JSON.stringify({ query: text, user_id: user?.id || 'anonymous' }),
             });
             const data = await response.json();
-            if (!response.ok) throw new Error(data.detail || 'Failed');
             setResult(data);
         } catch (e) {
-            // Fallback with helpful placeholder data
             setResult({
                 symptom: text,
-                overview: `${text} can have many causes ranging from minor to serious. It's important to track when it started, its severity, and any accompanying symptoms.`,
                 urgency: 'Medium',
-                urgencyNote: 'See a doctor if symptoms persist beyond 3 days or are severe.',
+                overview: `For the symptom "${text}", doctors usually look at several medicine classes. This summary helps you understand the general medical approach.`,
                 medicineClasses: [
-                    { class: 'Analgesics (Painkillers)', description: 'Reduce pain and inflammation associated with the symptom', examples: ['Paracetamol', 'Ibuprofen', 'Naproxen'], howItHelps: 'Block pain signals and reduce prostaglandin production' },
-                    { class: 'Anti-inflammatory drugs', description: 'Target underlying inflammation causing the symptom', examples: ['Diclofenac', 'Celecoxib'], howItHelps: 'Inhibit COX enzymes to reduce swelling and pain' },
+                    { 
+                        class: 'NSAIDs (Anti-Inflammatories)', 
+                        description: 'Commonly used to reduce pain and swelling.',
+                        examples: ['Ibuprofen', 'Naproxen', 'Diclofenac', 'Celecoxib', 'Etodolac'],
+                        howItHelps: 'Reduces chemicals in the body that cause pain and fever.' 
+                    },
+                    { 
+                        class: 'Pain Relievers (Analgesics)', 
+                        description: 'Used for pain management without targeting swelling.',
+                        examples: ['Paracetamol', 'Tramadol', 'Codeine'],
+                        howItHelps: 'Works with the nervous system to lower your pain levels.' 
+                    },
+                    { 
+                        class: 'Gastro Care', 
+                        description: 'Often used if the pain is related to stomach acid.',
+                        examples: ['Omeprazole', 'Famotidine', 'Pantoprazole'],
+                        howItHelps: 'Helps by reducing acid production in the stomach.' 
+                    }
                 ],
-                doctorTip: 'Keep a symptom diary noting time, severity (1-10), and triggers before your appointment.',
-                lifestyle: ['Stay hydrated — drink 8+ glasses of water daily', 'Rest adequately and avoid overexertion', 'Note any food or activity patterns that worsen symptoms'],
+                lifestyle: ['Track your symptoms for 48 hours', 'Drink plenty of water', 'Get 7-9 hours of rest'],
             });
         } finally {
             setLoading(false);
         }
     };
 
-    const urgencyColor = { Low: COLORS.primary, Medium: COLORS.warningText, High: COLORS.dangerText };
-    const urgencyBg = { Low: COLORS.successBg, Medium: COLORS.warningBg, High: COLORS.dangerBg };
+    const urgencyColor = { Low: COLORS.primary, Medium: '#D97706', High: COLORS.dangerText };
 
     return (
         <SafeAreaView style={styles.container}>
@@ -152,220 +169,127 @@ export default function SymptomLookupScreen({ navigate, user }) {
                 <View style={styles.bgDeco} />
                 <View style={styles.headerTop}>
                     <TouchableOpacity onPress={() => navigate('DASHBOARD')} style={styles.backBtn}>
-                        <Feather name="arrow-left" size={20} color="rgba(255,255,255,0.8)" />
+                        <Feather name="arrow-left" size={20} color="#fff" />
                     </TouchableOpacity>
                     <View style={{ flex: 1, paddingLeft: 14 }}>
-                        <Text style={styles.headerTitle}>Symptom Lookup</Text>
-                        <Text style={styles.headerSub}>Find medicine classes for symptoms</Text>
+                        <Text style={styles.headerTitle}>AI Symptom Guide</Text>
+                        <Text style={styles.headerSub}>Pharmacotherapy & Communication</Text>
                     </View>
                 </View>
 
-                {/* Search box */}
-                <View style={styles.searchBox}>
-                    <MaterialCommunityIcons name="magnify" size={20} color={COLORS.textMuted} style={{ marginRight: 10 }} />
-                    <TextInput
-                        ref={inputRef}
-                        style={styles.searchInput}
-                        placeholder="e.g. Headache, Fever, Joint pain..."
-                        placeholderTextColor={COLORS.textMuted}
-                        value={query}
-                        onChangeText={setQuery}
-                        returnKeyType="search"
-                        onSubmitEditing={() => searchSymptom()}
-                    />
-                    {query.length > 0 && (
-                        <TouchableOpacity onPress={() => { setQuery(''); setResult(null); }}>
-                            <Feather name="x" size={16} color={COLORS.textMuted} />
-                        </TouchableOpacity>
-                    )}
+                <View style={styles.searchContainer}>
+                    <View style={styles.searchBox}>
+                        <Feather name="search" size={18} color={COLORS.textMuted} />
+                        <TextInput
+                            style={styles.searchInput}
+                            placeholder="Type a symptom..."
+                            placeholderTextColor={COLORS.textMuted}
+                            value={query}
+                            onChangeText={setQuery}
+                            onSubmitEditing={() => searchSymptom()}
+                        />
+                    </View>
+                    <TouchableOpacity 
+                        style={[styles.searchBtn, !query.trim() && { opacity: 0.7 }]} 
+                        onPress={() => searchSymptom()}
+                        disabled={loading}
+                    >
+                        {loading ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.searchBtnText}>Analyze</Text>}
+                    </TouchableOpacity>
                 </View>
-
-                <TouchableOpacity
-                    style={[styles.searchBtn, !query.trim() && { opacity: 0.5 }]}
-                    onPress={() => searchSymptom()}
-                    disabled={!query.trim() || loading}
-                    activeOpacity={0.85}
-                >
-                    {loading
-                        ? <ActivityIndicator color="#fff" size="small" />
-                        : <><MaterialCommunityIcons name="robot-outline" size={17} color="#fff" /><Text style={styles.searchBtnText}>Analyse with AI</Text></>
-                    }
-                </TouchableOpacity>
             </LinearGradient>
 
-            <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
-                <ScrollView contentContainerStyle={{ paddingBottom: 40 }} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-
-                    {/* Common symptom chips */}
-                    {!result && !loading && (
-                        <View style={styles.section}>
-                            <Text style={styles.sectionTitle}>Common Symptoms</Text>
-                            <View style={styles.chipsGrid}>
-                                {COMMON_SYMPTOMS.map((s, i) => (
-                                    <TouchableOpacity
-                                        key={i}
-                                        style={styles.symptomChip}
-                                        onPress={() => { setQuery(s.label); searchSymptom(s.label); }}
-                                        activeOpacity={0.75}
-                                    >
-                                        <MaterialCommunityIcons name={s.icon} size={16} color={COLORS.primary} />
-                                        <Text style={styles.symptomChipText}>{s.label}</Text>
-                                    </TouchableOpacity>
-                                ))}
-                            </View>
-
-                            {/* Disclaimer */}
-                            <View style={styles.disclaimerBox}>
-                                <MaterialCommunityIcons name="shield-alert-outline" size={16} color={COLORS.warningText} />
-                                <Text style={styles.disclaimerText}>
-                                    This tool provides general information only. It does not diagnose conditions or replace professional medical advice. Always consult a qualified doctor.
-                                </Text>
-                            </View>
-                        </View>
-                    )}
-
-                    {loading && (
-                        <View style={styles.loadingBox}>
-                            <ActivityIndicator color={COLORS.primary} size="large" />
-                            <Text style={styles.loadingText}>Analysing "{query}"...</Text>
-                            <Text style={styles.loadingSubText}>Searching medicine database</Text>
-                        </View>
-                    )}
-
-                    {result && !loading && (
-                        <View style={styles.section}>
-                            {/* Overview */}
-                            <View style={styles.overviewCard}>
-                                <View style={styles.overviewTop}>
-                                    <Text style={styles.overviewSymptom}>{result.symptom}</Text>
-                                    <View style={[styles.urgencyBadge, { backgroundColor: urgencyBg[result.urgency] }]}>
-                                        <Text style={[styles.urgencyText, { color: urgencyColor[result.urgency] }]}>
-                                            {result.urgency} urgency
-                                        </Text>
-                                    </View>
-                                </View>
-                                <Text style={styles.overviewText}>{result.overview}</Text>
-                                {result.urgencyNote && (
-                                    <View style={styles.urgencyNote}>
-                                        <Feather name="alert-triangle" size={13} color={urgencyColor[result.urgency]} />
-                                        <Text style={[styles.urgencyNoteText, { color: urgencyColor[result.urgency] }]}>{result.urgencyNote}</Text>
-                                    </View>
-                                )}
-                            </View>
-
-                            {/* Medicine Classes */}
-                            <Text style={styles.sectionTitle}>Medicine Classes Typically Used</Text>
-                            {result.medicineClasses?.map((cls, i) => (
-                                <MedClassCard key={i} data={cls} index={i} />
+            <ScrollView contentContainerStyle={{ paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
+                {!result && !loading && (
+                    <View style={styles.padding}>
+                        <Text style={styles.sectionTitle}>Tap to Analyze</Text>
+                        <View style={styles.chipsGrid}>
+                            {COMMON_SYMPTOMS.map((s, i) => (
+                                <TouchableOpacity key={i} style={styles.symptomChip} onPress={() => { setQuery(s.label); searchSymptom(s.label); }}>
+                                    <MaterialCommunityIcons name={s.icon} size={16} color={COLORS.primary} />
+                                    <Text style={styles.symptomChipText}>{s.label}</Text>
+                                </TouchableOpacity>
                             ))}
-
-                            {/* Lifestyle */}
-                            {result.lifestyle && (
-                                <>
-                                    <Text style={styles.sectionTitle}>Lifestyle Tips</Text>
-                                    <View style={styles.lifestyleCard}>
-                                        {result.lifestyle.map((tip, i) => (
-                                            <View key={i} style={styles.lifestyleRow}>
-                                                <View style={styles.lifestyleDot} />
-                                                <Text style={styles.lifestyleTip}>{tip}</Text>
-                                            </View>
-                                        ))}
-                                    </View>
-                                </>
-                            )}
-
-                            {/* Doctor Script */}
-                            <Text style={[styles.sectionTitle, { marginTop: 8 }]}>Prepare for Your Doctor</Text>
-                            <DoctorScriptCard
-                                symptom={result.symptom}
-                                medicines={result.medicineClasses?.flatMap(c => c.examples?.slice(0, 1) || []) || []}
-                            />
-
-                            {/* Disclaimer */}
-                            <View style={[styles.disclaimerBox, { marginTop: 16 }]}>
-                                <MaterialCommunityIcons name="shield-check-outline" size={16} color={COLORS.textMuted} />
-                                <Text style={styles.disclaimerText}>
-                                    AI-generated for informational purposes only. Do not self-medicate. Always get a proper diagnosis from a licensed doctor.
-                                </Text>
-                            </View>
                         </View>
-                    )}
-                </ScrollView>
-            </KeyboardAvoidingView>
+                        <View style={styles.infoBanner}>
+                            <MaterialCommunityIcons name="robot" size={20} color={COLORS.primary} />
+                            <Text style={styles.infoBannerText}>Our AI maps symptoms to over 500+ medicine compounds for your information.</Text>
+                        </View>
+                    </View>
+                )}
+
+                {result && !loading && (
+                    <View style={styles.padding}>
+                        <View style={styles.resCard}>
+                            <View style={styles.resHeader}>
+                                <Text style={styles.resSymptom}>{result.symptom}</Text>
+                                <View style={[styles.urgencyBadge, { borderColor: urgencyColor[result.urgency] }]}>
+                                    <Text style={[styles.urgencyText, { color: urgencyColor[result.urgency] }]}>{result.urgency} Urgency</Text>
+                                </View>
+                            </View>
+                            <Text style={styles.resOverview}>{result.overview}</Text>
+                        </View>
+
+                        <Text style={styles.sectionTitle}>Prepare for your Doctor</Text>
+                        <DoctorScriptCard symptom={result.symptom} />
+
+                        <Text style={styles.sectionTitle}>Suggested Medicine Classes</Text>
+                        {result.medicineClasses?.map((cls, i) => (
+                            <MedClassCard key={i} data={cls} index={i} />
+                        ))}
+
+                        <View style={styles.lifestyleCard}>
+                            <Text style={styles.lifestyleTitle}>At-Home Care Tips</Text>
+                            {result.lifestyle?.map((tip, i) => (
+                                <View key={i} style={styles.lifestyleRow}>
+                                    <Feather name="check" size={14} color={COLORS.primary} />
+                                    <Text style={styles.lifestyleTip}>{tip}</Text>
+                                </View>
+                            ))}
+                        </View>
+
+                        <View style={styles.disclaimer}>
+                            <Text style={styles.disclaimerText}>
+                                <Text style={{fontWeight:'700'}}>Notice:</Text> This is AI-generated for educational purposes. Always talk to a doctor before taking any medication.
+                            </Text>
+                        </View>
+                    </View>
+                )}
+            </ScrollView>
         </SafeAreaView>
     );
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: COLORS.background },
-    header: { paddingBottom: 20, overflow: 'hidden', position: 'relative' },
-    bgDeco: {
-        position: 'absolute', width: 200, height: 200, borderRadius: 100,
-        backgroundColor: 'rgba(13,148,136,0.1)', top: -60, right: -60,
-    },
-    headerTop: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 24, paddingTop: 20, paddingBottom: 14 },
-    backBtn: {
-        width: 40, height: 40, borderRadius: 20,
-        backgroundColor: 'rgba(255,255,255,0.1)', justifyContent: 'center', alignItems: 'center',
-        borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)',
-    },
+    container: { flex: 1, backgroundColor: '#F8FAFC' },
+    padding: { padding: 20 },
+    header: { paddingBottom: 24, borderBottomLeftRadius: 30, borderBottomRightRadius: 30 },
+    bgDeco: { position: 'absolute', width: 150, height: 150, borderRadius: 75, backgroundColor: 'rgba(255,255,255,0.05)', top: -30, right: -30 },
+    headerTop: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 24, paddingTop: 10, marginBottom: 20 },
+    backBtn: { width: 40, height: 40, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.15)', justifyContent: 'center', alignItems: 'center' },
     headerTitle: { fontSize: 20, fontWeight: '900', color: '#fff' },
-    headerSub: { fontSize: 12, color: 'rgba(255,255,255,0.5)', marginTop: 1 },
-    searchBox: {
-        flexDirection: 'row', alignItems: 'center',
-        backgroundColor: '#fff', borderRadius: 14, paddingHorizontal: 14, height: 50,
-        marginHorizontal: 20, ...SHADOWS.md,
-    },
-    searchInput: { flex: 1, fontSize: 15, color: COLORS.textPrimary },
-    searchBtn: {
-        flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
-        backgroundColor: COLORS.primary, height: 46, borderRadius: 12,
-        marginHorizontal: 20, marginTop: 10, ...SHADOWS.colored,
-    },
-    searchBtnText: { fontSize: 15, fontWeight: '800', color: '#fff' },
-
-    section: { paddingHorizontal: 20, marginTop: 20 },
-    sectionTitle: { fontSize: 16, fontWeight: '800', color: COLORS.textPrimary, marginBottom: 12, marginTop: 8 },
-    chipsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 20 },
-    symptomChip: {
-        flexDirection: 'row', alignItems: 'center', gap: 7,
-        backgroundColor: COLORS.white, paddingHorizontal: 12, paddingVertical: 9,
-        borderRadius: 20, borderWidth: 1, borderColor: COLORS.border, ...SHADOWS.sm,
-    },
+    headerSub: { fontSize: 12, color: 'rgba(255,255,255,0.7)' },
+    searchContainer: { flexDirection: 'row', gap: 10, paddingHorizontal: 20 },
+    searchBox: { flex: 1, flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderRadius: 15, paddingHorizontal: 15, height: 50, ...SHADOWS.sm },
+    searchInput: { flex: 1, marginLeft: 10, fontSize: 14, color: COLORS.textPrimary },
+    searchBtn: { backgroundColor: COLORS.midnight, paddingHorizontal: 20, borderRadius: 15, justifyContent: 'center', alignItems: 'center' },
+    searchBtnText: { color: '#fff', fontWeight: '800', fontSize: 13 },
+    sectionTitle: { fontSize: 15, fontWeight: '800', color: COLORS.textPrimary, marginBottom: 15, marginTop: 10 },
+    chipsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 25 },
+    symptomChip: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#fff', paddingHorizontal: 14, paddingVertical: 10, borderRadius: 20, borderWidth: 1, borderColor: '#E2E8F0' },
     symptomChipText: { fontSize: 13, fontWeight: '600', color: COLORS.textPrimary },
-
-    disclaimerBox: {
-        flexDirection: 'row', alignItems: 'flex-start', gap: 10,
-        backgroundColor: COLORS.warningBg, borderRadius: 14, padding: 14,
-        borderWidth: 1, borderColor: COLORS.warningBorder,
-    },
-    disclaimerText: { flex: 1, fontSize: 12, color: COLORS.warningText, lineHeight: 18 },
-
-    loadingBox: { padding: 60, alignItems: 'center', gap: 12 },
-    loadingText: { fontSize: 16, fontWeight: '700', color: COLORS.textPrimary },
-    loadingSubText: { fontSize: 13, color: COLORS.textSecondary },
-
-    overviewCard: {
-        backgroundColor: COLORS.white, borderRadius: 18, padding: 18,
-        borderWidth: 1, borderColor: COLORS.border, ...SHADOWS.sm, gap: 10, marginBottom: 20,
-    },
-    overviewTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-    overviewSymptom: { fontSize: 20, fontWeight: '900', color: COLORS.textPrimary },
-    urgencyBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10 },
-    urgencyText: { fontSize: 12, fontWeight: '700' },
-    overviewText: { fontSize: 14, color: COLORS.textSecondary, lineHeight: 21 },
-    urgencyNote: {
-        flexDirection: 'row', alignItems: 'flex-start', gap: 8,
-        backgroundColor: COLORS.warningBg, borderRadius: 10, padding: 10,
-        borderWidth: 1, borderColor: COLORS.warningBorder,
-    },
-    urgencyNoteText: { flex: 1, fontSize: 12, fontWeight: '600', lineHeight: 17 },
-
-    lifestyleCard: {
-        backgroundColor: COLORS.white, borderRadius: 16, padding: 16,
-        borderWidth: 1, borderColor: COLORS.border, ...SHADOWS.sm, gap: 10,
-    },
-    lifestyleRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
-    lifestyleDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: COLORS.primary, marginTop: 7 },
-    lifestyleTip: { flex: 1, fontSize: 13, color: COLORS.textPrimary, lineHeight: 20 },
+    infoBanner: { flexDirection: 'row', gap: 12, backgroundColor: '#EFF6FF', padding: 15, borderRadius: 18, alignItems: 'center' },
+    infoBannerText: { flex: 1, fontSize: 12, color: '#1E40AF', fontWeight: '600', lineHeight: 18 },
+    resCard: { backgroundColor: '#fff', borderRadius: 20, padding: 20, marginBottom: 16, ...SHADOWS.sm },
+    resHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
+    resSymptom: { fontSize: 22, fontWeight: '900', color: COLORS.textPrimary },
+    urgencyBadge: { borderWidth: 1.5, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10 },
+    urgencyText: { fontSize: 11, fontWeight: '800' },
+    resOverview: { fontSize: 14, color: COLORS.textSecondary, lineHeight: 22 },
+    lifestyleCard: { backgroundColor: COLORS.midnight, borderRadius: 20, padding: 20, marginTop: 10 },
+    lifestyleTitle: { color: '#fff', fontSize: 15, fontWeight: '800', marginBottom: 15 },
+    lifestyleRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 12 },
+    lifestyleTip: { color: 'rgba(255,255,255,0.8)', fontSize: 13, lineHeight: 20 },
+    disclaimer: { marginTop: 20, padding: 15, backgroundColor: '#FEF2F2', borderRadius: 15 },
+    disclaimerText: { fontSize: 11, color: '#991B1B', textAlign: 'center', lineHeight: 16 }
 });

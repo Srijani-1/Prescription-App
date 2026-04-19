@@ -78,10 +78,10 @@ const SCREEN_TITLES = {
 const TAB_SCREENS = new Set(['DASHBOARD', 'SCANNER', 'DRUG_INTERACTION', 'DOSE_TRACKER', 'ASK_AI']);
 
 // Screens that need the shared header
-const NEEDS_HEADER = new Set(['HISTORY', 'PHARMACY', 'PROFILE', 'CONFIRM_MEDICINES']);
+const NEEDS_HEADER = new Set(['PHARMACY', 'PROFILE']);
 
 // Screens that manage their own full header (no shared back header)
-const SELF_HEADER = new Set(['PRESCRIPTION_TIMELINE', 'FAMILY_PROFILE', 'MEDICINE_EXPLAINER', 'REFILL_REMINDER', 'SYMPTOM_LOOKUP', 'PRESCRIPTION_DETAIL']);
+const SELF_HEADER = new Set(['PRESCRIPTION_TIMELINE', 'FAMILY_PROFILE', 'MEDICINE_EXPLAINER', 'REFILL_REMINDER', 'SYMPTOM_LOOKUP', 'PRESCRIPTION_DETAIL', 'CONFIRM_MEDICINES', 'HISTORY']);
 
 export default function App() {
   const [screen, setScreen] = useState('LANDING');

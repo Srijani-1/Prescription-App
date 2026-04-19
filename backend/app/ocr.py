@@ -6,7 +6,10 @@ import pytesseract
 from concurrent.futures import ThreadPoolExecutor
 from rapidfuzz import fuzz
 
-pytesseract.pytesseract.tesseract_cmd = r'C:\Users\srijani\AppData\Local\Programs\Tesseract-OCR\tesseract.exe'
+import pytesseract
+import shutil
+
+pytesseract.pytesseract.tesseract_cmd = shutil.which("tesseract")
 reader = easyocr.Reader(['en'], gpu=False)
 TESS_CONFIG = r'--oem 3 --psm 6 -c tessedit_char_whitelist=ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789./-()' 
 
