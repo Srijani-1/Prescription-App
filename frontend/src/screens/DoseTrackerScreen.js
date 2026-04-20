@@ -311,11 +311,29 @@ export default function DoseTrackerScreen({ user, navigate, goBack, currentScree
                             <Text style={styles.timeEditorLabel}>Reminder Time:</Text>
                             <View style={styles.timeInputs}>
                                 <View style={styles.timeUnit}>
-                                    <TextInput style={styles.timeUnitInput} keyboardType="numeric" maxLength={2} value={newHour} onChangeText={setNewHour} />
+                                    <TextInput 
+                                        style={styles.timeUnitInput} 
+                                        keyboardType="numeric" 
+                                        maxLength={2} 
+                                        value={newHour} 
+                                        onChangeText={setNewHour}
+                                        placeholder="HH"
+                                        placeholderTextColor={COLORS.textMuted}
+                                        selectTextOnFocus={true}
+                                    />
                                 </View>
                                 <Text style={styles.timeSeparator}>:</Text>
                                 <View style={styles.timeUnit}>
-                                    <TextInput style={styles.timeUnitInput} keyboardType="numeric" maxLength={2} value={newMin} onChangeText={setNewMin} />
+                                    <TextInput 
+                                        style={styles.timeUnitInput} 
+                                        keyboardType="numeric" 
+                                        maxLength={2} 
+                                        value={newMin} 
+                                        onChangeText={setNewMin}
+                                        placeholder="MM"
+                                        placeholderTextColor={COLORS.textMuted}
+                                        selectTextOnFocus={true}
+                                    />
                                 </View>
                                 <View style={styles.ampmToggle}>
                                     <TouchableOpacity style={[styles.ampmBtn, newAmPm === 'AM' && styles.ampmBtnActive]} onPress={() => setNewAmPm('AM')}>
@@ -372,9 +390,27 @@ export default function DoseTrackerScreen({ user, navigate, goBack, currentScree
                                             <View style={{ flex: 1 }}>
                                                 <View style={styles.inlineEditor}>
                                                     <View style={styles.inlineInputs}>
-                                                        <TextInput style={styles.inlineInput} value={editHour} onChangeText={setEditHour} keyboardType="numeric" maxLength={2} />
+                                                        <TextInput 
+                                                            style={styles.inlineInput} 
+                                                            value={editHour} 
+                                                            onChangeText={setEditHour} 
+                                                            keyboardType="numeric" 
+                                                            maxLength={2}
+                                                            placeholder="HH"
+                                                            placeholderTextColor={COLORS.textMuted}
+                                                            selectTextOnFocus={true}
+                                                        />
                                                         <Text style={styles.inlineSeparator}>:</Text>
-                                                        <TextInput style={styles.inlineInput} value={editMin} onChangeText={setEditMin} keyboardType="numeric" maxLength={2} />
+                                                        <TextInput 
+                                                            style={styles.inlineInput} 
+                                                            value={editMin} 
+                                                            onChangeText={setEditMin} 
+                                                            keyboardType="numeric" 
+                                                            maxLength={2}
+                                                            placeholder="MM"
+                                                            placeholderTextColor={COLORS.textMuted}
+                                                            selectTextOnFocus={true}
+                                                        />
                                                         <TouchableOpacity onPress={() => setEditAmPm(editAmPm === 'AM' ? 'PM' : 'AM')} style={styles.inlineAmPm}>
                                                             <Text style={styles.inlineAmPmText}>{editAmPm}</Text>
                                                         </TouchableOpacity>
@@ -487,8 +523,8 @@ const styles = StyleSheet.create({
     timeEditorRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: COLORS.lightGray, borderRadius: 12, padding: 12, borderWidth: 1, borderColor: COLORS.border },
     timeEditorLabel: { fontSize: 13, fontWeight: '700', color: COLORS.textSecondary },
     timeInputs: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-    timeUnit: { backgroundColor: '#fff', borderRadius: 8, width: 40, height: 36, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: COLORS.border },
-    timeUnitInput: { fontSize: 15, fontWeight: '800', color: COLORS.textPrimary, textAlign: 'center' },
+    timeUnit: { backgroundColor: '#fff', borderRadius: 8, width: 45, height: 40, justifyContent: 'center', alignItems: 'center', borderWidth: 1.5, borderColor: COLORS.primary, paddingHorizontal: 4 },
+    timeUnitInput: { fontSize: 16, fontWeight: '800', color: COLORS.textPrimary, textAlign: 'center', width: '100%' },
     timeSeparator: { fontSize: 16, fontWeight: '900', color: COLORS.textSecondary },
     ampmToggle: { flexDirection: 'row', backgroundColor: '#fff', borderRadius: 8, padding: 2, borderWidth: 1, borderColor: COLORS.border, marginLeft: 4 },
     ampmBtn: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
@@ -499,7 +535,7 @@ const styles = StyleSheet.create({
     editTimeBtn: { padding: 4 },
     inlineEditor: { flexDirection: 'row', alignItems: 'center', gap: 8 },
     inlineInputs: { flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.lightGray, borderRadius: 8, paddingHorizontal: 6, paddingVertical: 2, borderWidth: 1, borderColor: COLORS.border },
-    inlineInput: { fontSize: 14, fontWeight: '700', color: COLORS.textPrimary, width: 24, textAlign: 'center' },
+    inlineInput: { fontSize: 14, fontWeight: '700', color: COLORS.textPrimary, width: 30, textAlign: 'center', paddingHorizontal: 4 },
     inlineSeparator: { fontSize: 14, fontWeight: '700', color: COLORS.textSecondary },
     inlineAmPm: { marginLeft: 4, paddingHorizontal: 4 },
     inlineAmPmText: { fontSize: 12, fontWeight: '800', color: COLORS.primary },

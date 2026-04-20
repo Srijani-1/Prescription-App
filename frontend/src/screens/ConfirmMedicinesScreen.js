@@ -244,6 +244,7 @@ export default function ConfirmMedicinesScreen({ route, navigation }) {
                                             onChangeText={(t) => updateMed(m.medicine, 'name', t)}
                                             placeholder="Medicine name"
                                             placeholderTextColor="#9CA3AF"
+                                            selectTextOnFocus={true}
                                         />
                                     </View>
                                     <View style={styles.inputGroup}>
@@ -254,6 +255,7 @@ export default function ConfirmMedicinesScreen({ route, navigation }) {
                                             onChangeText={(t) => updateMed(m.medicine, 'dosage', t)}
                                             placeholder="e.g. 500mg"
                                             placeholderTextColor="#9CA3AF"
+                                            selectTextOnFocus={true}
                                         />
                                     </View>
                                     <View style={styles.inputGroup}>
@@ -264,6 +266,7 @@ export default function ConfirmMedicinesScreen({ route, navigation }) {
                                             onChangeText={(t) => updateMed(m.medicine, 'frequency', t)}
                                             placeholder="e.g. Twice a day"
                                             placeholderTextColor="#9CA3AF"
+                                            selectTextOnFocus={true}
                                         />
                                     </View>
                                     <View style={styles.inputGroup}>
@@ -274,6 +277,7 @@ export default function ConfirmMedicinesScreen({ route, navigation }) {
                                             onChangeText={(t) => updateMed(m.medicine, 'duration', t)}
                                             placeholder="e.g. 5 days"
                                             placeholderTextColor="#9CA3AF"
+                                            selectTextOnFocus={true}
                                         />
                                     </View>
                                 </View>
