@@ -7,7 +7,6 @@ import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { API_URL } from '../config';
 
-// Reusing your theme logic or localizing for the snippet
 const COLORS = {
     primary: '#14B8A6',
     primaryDark: '#0D9488',
@@ -21,8 +20,6 @@ const COLORS = {
 
 export default function ProfileScreen({ user, setUser, navigate }) {
     const { width: windowWidth } = useWindowDimensions();
-    
-    // Responsive Logic
     const isLargeScreen = windowWidth > 768;
     const containerWidth = isLargeScreen ? 600 : '100%';
 
@@ -30,6 +27,7 @@ export default function ProfileScreen({ user, setUser, navigate }) {
     const [email, setEmail] = useState(user?.email || '');
     const [phone, setPhone] = useState(user?.phone || '');
     const [saving, setSaving] = useState(false);
+    const [deleting, setDeleting] = useState(false); // New state for delete loading
     const [focusedField, setFocusedField] = useState(null);
 
     const [modalVisible, setModalVisible] = useState(false);
@@ -48,6 +46,29 @@ export default function ProfileScreen({ user, setUser, navigate }) {
         );
     };
 
+    // --- LOGIC FIX: DELETE ACCOUNT ---
+    const executeDelete = async () => {
+        setModalVisible(false);
+        setDeleting(true);
+        try {
+            const response = await fetch(`${API_URL}api/auth/users/${user?.id}`, {
+                method: 'DELETE',
+            });
+            
+            if (response.ok) {
+                // Clear user data and send to landing
+                setUser(null);
+                navigate('LANDING');
+            } else {
+                showBanner('error', "Deletion Failed", "We couldn't delete your account at this time.");
+            }
+        } catch (err) {
+            showBanner('error', "Network Error", "Please check your connection.");
+        } finally {
+            setDeleting(false);
+        }
+    };
+
     const executeUpdate = async () => {
         setModalVisible(false);
         setSaving(true);
@@ -60,12 +81,12 @@ export default function ProfileScreen({ user, setUser, navigate }) {
             if (response.ok) {
                 const data = await response.json();
                 setUser({ ...user, ...data });
-                setTimeout(() => showBanner('success', "Success", "Your profile is up to date.", () => setModalVisible(false)), 500);
+                setTimeout(() => showBanner('success', "Success", "Your profile is up to date."), 500);
             } else {
                 showBanner('error', "Update Failed", "We couldn't save your changes.");
             }
         } catch (err) {
-            showBanner('error', "Network Error", "Please check your internet connection.");
+            showBanner('error', "Network Error", "Please check your connection.");
         } finally {
             setSaving(false);
         }
@@ -80,7 +101,6 @@ export default function ProfileScreen({ user, setUser, navigate }) {
                 <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
                     <View style={[styles.wrapper, { width: containerWidth }]}>
                         
-                        {/* Header Section */}
                         <View style={styles.header}>
                             <View style={styles.avatarBase}>
                                 <LinearGradient colors={[COLORS.primary, COLORS.primaryDark]} style={styles.avatarInner}>
@@ -90,7 +110,6 @@ export default function ProfileScreen({ user, setUser, navigate }) {
                             <Text style={styles.userName}>{name || 'User Profile'}</Text>
                         </View>
 
-                        {/* Main Info Card */}
                         <View style={styles.mainCard}>
                             <Text style={styles.cardHeading}>Personal Information</Text>
                             
@@ -129,7 +148,6 @@ export default function ProfileScreen({ user, setUser, navigate }) {
                             </TouchableOpacity>
                         </View>
 
-                        {/* Redesigned Bottom Buttons */}
                         <View style={styles.managementSection}>
                             <Text style={styles.managementTitle}>Account Management</Text>
                             <View style={[styles.buttonGrid, isLargeScreen && styles.buttonGridDesktop]}>
@@ -147,12 +165,19 @@ export default function ProfileScreen({ user, setUser, navigate }) {
                                     </View>
                                 </TouchableOpacity>
 
+                                {/* --- FIXED BUTTON: DELETE ACCOUNT --- */}
                                 <TouchableOpacity 
                                     style={[styles.tileBtn, styles.tileBtnDanger]} 
-                                    onPress={() => showBanner('danger', "Delete Account", "This will permanently erase all your data. Proceed?", () => {})}
+                                    onPress={() => showBanner(
+                                        'danger', 
+                                        "Delete Account", 
+                                        "This will permanently erase all your data. This cannot be undone. Proceed?", 
+                                        executeDelete
+                                    )}
+                                    disabled={deleting}
                                 >
                                     <View style={[styles.tileIcon, { backgroundColor: '#FEF2F2' }]}>
-                                        <Feather name="trash-2" size={20} color={COLORS.danger} />
+                                        {deleting ? <ActivityIndicator size="small" color={COLORS.danger} /> : <Feather name="trash-2" size={20} color={COLORS.danger} />}
                                     </View>
                                     <View>
                                         <Text style={[styles.tileTitle, { color: COLORS.danger }]}>Delete Account</Text>
@@ -181,7 +206,8 @@ export default function ProfileScreen({ user, setUser, navigate }) {
                         <Text style={styles.modalTitle}>{modalConfig.title}</Text>
                         <Text style={styles.modalMsg}>{modalConfig.message}</Text>
                         <View style={styles.modalActions}>
-                            {modalConfig.type !== 'success' && modalConfig.type !== 'info' && (
+                            {/* Show Cancel if it's a confirmation or danger type */}
+                            {(modalConfig.type === 'confirm' || modalConfig.type === 'danger') && (
                                 <TouchableOpacity style={styles.mBtnSecondary} onPress={() => setModalVisible(false)}>
                                     <Text style={styles.mBtnSecondaryText}>Cancel</Text>
                                 </TouchableOpacity>
@@ -190,7 +216,9 @@ export default function ProfileScreen({ user, setUser, navigate }) {
                                 style={[styles.mBtnPrimary, { backgroundColor: modalConfig.type === 'danger' ? COLORS.danger : COLORS.primary }]} 
                                 onPress={() => modalConfig.onConfirm ? modalConfig.onConfirm() : setModalVisible(false)}
                             >
-                                <Text style={styles.mBtnPrimaryText}>{modalConfig.type === 'success' ? 'OK' : 'Confirm'}</Text>
+                                <Text style={styles.mBtnPrimaryText}>
+                                    {modalConfig.type === 'success' || modalConfig.type === 'info' ? 'OK' : 'Confirm'}
+                                </Text>
                             </TouchableOpacity>
                         </View>
                     </View>
