@@ -77,24 +77,38 @@ app.include_router(medications_router)
 app.include_router(symptoms_router)
 app.include_router(family_router)
 
-@app.get("/api/health-score")
+@app.get("/api/user/health-score") # Fixed path to include /user/
 async def get_health_score(user_id: str, db: Session = Depends(get_db)):
     medications = db.query(models.Medication).filter(models.Medication.user_id == user_id).all()
+    
+    # If no medications, return a default baseline score
     if not medications:
-        return {"score": 72, "trend": "+0 this week"}
+        return {
+            "status": "success", 
+            "score": 72, 
+            "trend": "+0 this week"
+        }
+        
     total_doses = 0
     taken_doses = 0
+    
     for med in medications:
         times = db.query(models.MedicationTime).filter(models.MedicationTime.medication_id == med.id).all()
         total_doses += len(times)
         taken_doses += sum(1 for t in times if t.taken)
     
+    # Calculate adherence-based score
     score = 72
+    adherence = 0
     if total_doses > 0:
         adherence = taken_doses / total_doses
         score = min(100, 72 + int(adherence * 28))
         
-    return {"score": score, "trend": f"+{int(adherence * 10)} this week"}
+    return {
+        "status": "success", 
+        "score": score, 
+        "trend": f"+{int(adherence * 10)} this week"
+    }
 
 @app.post("/chat")
 async def chat(req: ChatRequest):
