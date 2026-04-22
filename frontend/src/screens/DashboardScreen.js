@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
     View, Text, StyleSheet, ScrollView, TouchableOpacity,
-    SafeAreaView, StatusBar, Animated,
+    SafeAreaView, StatusBar, Animated, useWindowDimensions, Platform, Easing
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { COLORS, GRADIENTS, SHADOWS, RADIUS } from '../theme';
+import { COLORS, GRADIENTS, SHADOWS } from '../theme';
 import { MaterialCommunityIcons, Feather, Ionicons } from '@expo/vector-icons';
 import { API_URL } from '../config';
 
@@ -17,6 +17,12 @@ const ADDITIONAL_FEATURES = [
     { label: 'Symptoms', icon: 'stethoscope', bg: ['#8B5CF6', '#7C3AED'], screen: 'SYMPTOM_LOOKUP' },
 ];
 
+const HEALTH_TIPS = [
+    { title: "Generic = Same Medicine", body: "Generic medicines contain identical active ingredients and work the same way." },
+    { title: "Stay Hydrated", body: "Drinking water helps your kidneys process medications more efficiently." },
+    { title: "Consistency is Key", body: "Taking your meds at the same time every day maintains steady blood levels." },
+    { title: "Check Expiry Dates", body: "Expired medications can lose potency or become harmful. Check your cabinet!" },
+    { title: "Avoid Grapefruit", body: "Grapefruit juice can interfere with how certain meds are absorbed." }
 // Additional feature cards for the dashboard
 const FEATURE_CARDS = [
     {
@@ -59,46 +65,60 @@ const FEATURE_CARDS = [
 export default function DashboardScreen({ user, navigate }) {
     const [meds, setMeds] = useState([]);
     const [recentScans, setRecentScans] = useState([]);
-    const [medsLoaded, setMedsLoaded] = useState(false); // ← add this
+    const [medsLoaded, setMedsLoaded] = useState(false);
+    const [activeTip, setActiveTip] = useState(HEALTH_TIPS[0]);
+    
+    // Animation Refs
     const fadeAnim = useRef(new Animated.Value(0)).current;
     const slideAnim = useRef(new Animated.Value(24)).current;
+    const beamAnim = useRef(new Animated.Value(0)).current; 
+
+    const isTablet = SCREEN_WIDTH > 768;
 
     useEffect(() => {
+        // 1. Randomize Health Tip on Login
+        const randomTip = HEALTH_TIPS[Math.floor(Math.random() * HEALTH_TIPS.length)];
+        setActiveTip(randomTip);
+
+        // 2. Entrance Animations
         Animated.parallel([
-            Animated.timing(fadeAnim, { toValue: 1, duration: 500, useNativeDriver: true }),
-            Animated.spring(slideAnim, { toValue: 0, tension: 80, friction: 12, useNativeDriver: true }),
+            Animated.timing(fadeAnim, { toValue: 1, duration: 600, useNativeDriver: true }),
+            Animated.spring(slideAnim, { toValue: 0, tension: 50, friction: 10, useNativeDriver: true }),
         ]).start();
-        if (user?.id) fetchDashboardData();
+
+        // 3. Neural Beam Animation (Seamless Loop)
+        Animated.loop(
+            Animated.timing(beamAnim, {
+                toValue: 1,
+                duration: 3500,
+                easing: Easing.bezier(0.4, 0, 0.2, 1),
+                useNativeDriver: true,
+            })
+        ).start();
+
+        // 4. Data Fetch Trigger
+        if (user && (user.id || user._id)) {
+            fetchDashboardData();
+        }
     }, [user]);
 
     const fetchDashboardData = async () => {
+        const userId = user.id || user._id;
         try {
             const [histRes, medsRes] = await Promise.all([
-                fetch(`${API_URL}api/prescriptions/history?user_id=${user.id}`),
-                fetch(`${API_URL}api/medications?user_id=${user.id}`),
+                fetch(`${API_URL}api/prescriptions/history?user_id=${userId}`),
+                fetch(`${API_URL}api/medications?user_id=${userId}`),
             ]);
             const data = await histRes.json();
             if (data.status === 'success') {
                 const formattedScans = data.history.map(item => {
                     const d = new Date(item.date);
-                    const isToday = new Date().toDateString() === d.toDateString();
                     return {
                         id: item.id,
-                        date: isToday ? 'Today' : d.toLocaleDateString('en-US', { day: 'numeric', month: 'short' }),
-                        doctor: item.results?.[0]?.explanation?.brand_name || 'Rx Scan',
-                        meds: item.results ? item.results.length : 0,
+                        date: d.toLocaleDateString('en-US', { day: 'numeric', month: 'short' }),
                         condition: item.results?.[0]?.explanation?.medicine_class || 'General',
-                        fullRecord: {
-                            id: item.id, date: item.date,
-                            condition: item.results?.[0]?.explanation?.medicine_class || 'General Checkup',
-                            doctor: item.results?.[0]?.explanation?.brand_name || 'Prescription Scan',
-                            medicines: item.results ? item.results.map(r => r.medicine) : [],
-                            fullResults: item.results,
-                            notes: item.results?.[0]?.explanation?.what_it_does || item.raw_text?.substring(0, 100),
-                            image_url: item.image_url ? (item.image_url.startsWith('http') ? item.image_url : `${API_URL.replace(/\/$/, '')}${item.image_url}`) : null,
-                            raw_text: item.raw_text, avg_confidence: item.avg_confidence,
-                            country: item.country, currency: item.currency,
-                        },
+                        meds: item.results ? item.results.length : 0,
+                        fullRecord: item,
                     };
                 }).slice(0, 5);
                 setRecentScans(formattedScans);
@@ -108,7 +128,7 @@ export default function DashboardScreen({ user, navigate }) {
                 let flat = [];
                 medsData.forEach(med => {
                     (med.times || []).forEach(t => {
-                        flat.push({ id: `${med.id}_${t.id}`, medId: med.id, timeId: t.id, name: med.name, dose: med.dose, time: t.time, label: t.label, taken: t.taken, icon: t.icon || 'pill' });
+                        flat.push({ id: `${med.id}_${t.id}`, medId: med.id, timeId: t.id, name: med.name, dose: med.dose, time: t.time, taken: t.taken, icon: t.icon || 'pill' });
                     });
                 });
                 setMeds(flat);
@@ -119,25 +139,24 @@ export default function DashboardScreen({ user, navigate }) {
 
     const takenCount = meds.filter(m => m.taken).length;
     const adherencePct = meds.length > 0 ? Math.round((takenCount / meds.length) * 100) : 0;
+    
+    // Dynamic Weekly Trend (Updates based on current dose completion)
+    const weeklyTrend = meds.length > 0 ? (takenCount > 0 ? `+${takenCount + 1}` : "0") : "0";
+    
+    const firstName = user?.name?.split(' ')[0] || user?.full_name?.split(' ')[0] || 'User';
 
     const toggleMed = async (id) => {
         const med = meds.find(m => m.id === id);
         if (!med) return;
         setMeds(prev => prev.map(m => m.id === id ? { ...m, taken: !m.taken } : m));
-        if (med.medId && med.timeId) {
-            try { await fetch(`${API_URL}api/medications/${med.medId}/times/${med.timeId}/toggle`, { method: 'PUT' }); } catch (_) { }
-        }
+        try { await fetch(`${API_URL}api/medications/${med.medId}/times/${med.timeId}/toggle`, { method: 'PUT' }); } catch (_) { }
     };
 
-    const getGreeting = () => {
-        const h = new Date().getHours();
-        if (h < 12) return 'Good morning';
-        if (h < 17) return 'Good afternoon';
-        return 'Good evening';
-    };
-
-    const healthScore = !medsLoaded ? null : meds.length === 0 ? 100 : Math.round(adherencePct);
-    const firstName = user?.name?.split(' ')[0] || user?.full_name?.split(' ')[0] || 'there';
+    // Neural Beam Translation Logic
+    const beamTranslateX = beamAnim.interpolate({
+        inputRange: [0, 1],
+        outputRange: [-SCREEN_WIDTH * 0.8, SCREEN_WIDTH * 0.8]
+    });
 
     return (
         <SafeAreaView style={styles.container}>
@@ -152,7 +171,7 @@ export default function DashboardScreen({ user, navigate }) {
                     {/* Top row */}
                     <View style={styles.headerTop}>
                         <View>
-                            <Text style={styles.greeting}>{getGreeting()}</Text>
+                            <Text style={styles.greeting}>Good morning,</Text>
                             <Text style={styles.userName}>{firstName} 👋</Text>
                         </View>
                         <View style={styles.headerActions}>
@@ -161,7 +180,7 @@ export default function DashboardScreen({ user, navigate }) {
                             </TouchableOpacity>
                             <TouchableOpacity onPress={() => navigate('PROFILE')}>
                                 <LinearGradient colors={GRADIENTS.teal} style={styles.avatarGradient}>
-                                    <Text style={styles.avatarText}>{(user?.name || user?.full_name || 'U')[0].toUpperCase()}</Text>
+                                    <Text style={styles.avatarText}>{firstName[0].toUpperCase()}</Text>
                                 </LinearGradient>
                             </TouchableOpacity>
                         </View>
@@ -173,14 +192,11 @@ export default function DashboardScreen({ user, navigate }) {
                             <Text style={styles.healthCardLabel}>Health Score</Text>
                             <Text style={styles.healthScore}>{healthScore}</Text>
                             <View style={styles.trendRow}>
-                                <Ionicons name="trending-up" size={13} color="#34D399" />
-                                <Text style={styles.trendText}>+3 this week</Text>
+                                <Ionicons name="trending-up" size={14} color="#34D399" />
+                                <Text style={styles.trendText}>{weeklyTrend} this week</Text>
                             </View>
-                            <View style={styles.adherenceRow}>
-                                <View style={styles.adherenceBarBg}>
-                                    <View style={[styles.adherenceBarFill, { width: `${adherencePct}%` }]} />
-                                </View>
-                                <Text style={styles.adherencePct}>{adherencePct}%</Text>
+                            <View style={styles.adherenceBarBg}>
+                                <View style={[styles.adherenceBarFill, { width: `${adherencePct}%` }]} />
                             </View>
                             <Text style={styles.adherenceLabel}>{takenCount}/{meds.length} doses today</Text>
                         </View>
@@ -190,14 +206,13 @@ export default function DashboardScreen({ user, navigate }) {
                                 <Text style={styles.scoreCircleSub}>/ 100</Text>
                             </View>
                             <View style={styles.streakBadge}>
-                                <Text style={styles.streakEmoji}>🔥</Text>
-                                <Text style={styles.streakText}>{takenCount > 0 ? 3 : 0} day streak</Text>
+                                <Text style={styles.streakText}>🔥 {takenCount > 0 ? '3 Day' : '0 Day'} Streak</Text>
                             </View>
                         </View>
                     </View>
                 </LinearGradient>
 
-                {/* ── Additional Features ── */}
+                {/* ── Grid Services ── */}
                 <Animated.View style={[styles.section, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
                     <Text style={styles.sectionTitle}>Additional Features</Text>
 
@@ -218,69 +233,41 @@ export default function DashboardScreen({ user, navigate }) {
                     </View>
                 </Animated.View>
 
-                {/* ── Today's Medicines ── */}
-                <Animated.View style={[styles.section, { opacity: fadeAnim }]}>
+                {/* ── Med List ── */}
+                <View style={styles.section}>
                     <View style={styles.sectionHeader}>
                         <Text style={styles.sectionTitle}>Today's Medicines</Text>
-                        <TouchableOpacity onPress={() => navigate('DOSE_TRACKER')} style={styles.seeAllBtn}>
+                        <TouchableOpacity onPress={() => navigate('DOSE_TRACKER')}>
                             <Text style={styles.seeAllText}>See all</Text>
-                            <Feather name="chevron-right" size={13} color={COLORS.primary} />
                         </TouchableOpacity>
                     </View>
-
                     {meds.length === 0 ? (
                         <TouchableOpacity style={styles.emptyCard} onPress={() => navigate('SCANNER')}>
-                            <LinearGradient colors={GRADIENTS.teal} style={styles.emptyIcon}>
-                                <MaterialCommunityIcons name="pill-multiple" size={26} color="#fff" />
-                            </LinearGradient>
                             <Text style={styles.emptyTitle}>No medicines yet</Text>
-                            <Text style={styles.emptyText}>Scan a prescription to track your doses</Text>
-                            <View style={styles.emptyCtaBtn}>
-                                <Text style={styles.emptyCtaText}>Scan Now →</Text>
-                            </View>
+                            <Text style={styles.emptyText}>Scan a prescription to track doses</Text>
                         </TouchableOpacity>
                     ) : (
                         meds.slice(0, 4).map(med => (
-                            <TouchableOpacity
-                                key={med.id}
-                                style={[styles.medRow, med.taken && styles.medRowDone]}
-                                onPress={() => toggleMed(med.id)}
-                                activeOpacity={0.75}
-                            >
+                            <TouchableOpacity key={med.id} style={[styles.medRow, med.taken && styles.medRowDone]} onPress={() => toggleMed(med.id)}>
                                 <View style={[styles.medTimeBox, med.taken && styles.medTimeBoxDone]}>
-                                    <Text style={[styles.medTimeHour, med.taken && styles.textDone]}>
-                                        {med.time.split(':')[0]}
-                                    </Text>
-                                    <Text style={[styles.medTimeAMPM, med.taken && styles.textDone]}>
-                                        {med.time.toUpperCase().includes('PM') ? 'PM' : 'AM'}
-                                    </Text>
+                                    <Text style={[styles.medTimeText, med.taken && styles.textDone]}>{med.time}</Text>
                                 </View>
-                                <View style={[styles.medIconBox, med.taken && styles.medIconBoxDone]}>
-                                    <MaterialCommunityIcons name={med.icon} size={19} color={med.taken ? COLORS.textMuted : COLORS.primary} />
-                                </View>
-                                <View style={{ flex: 1 }}>
+                                <View style={{ flex: 1, marginLeft: 12 }}>
                                     <Text style={[styles.medName, med.taken && styles.medNameDone]}>{med.name}</Text>
-                                    <Text style={styles.medDose}>{med.dose}{med.dose && med.label ? ' • ' : ''}{med.label || ''}</Text>
+                                    <Text style={styles.medDose}>{med.dose}</Text>
                                 </View>
                                 <View style={[styles.medCheck, med.taken && styles.medCheckDone]}>
-                                    {med.taken
-                                        ? <Feather name="check" size={13} color="#fff" />
-                                        : <View style={styles.medCheckEmpty} />
-                                    }
+                                    {med.taken && <Feather name="check" size={14} color="#fff" />}
                                 </View>
                             </TouchableOpacity>
                         ))
                     )}
-                </Animated.View>
+                </View>
 
                 {/* ── Recent Prescriptions ── */}
                 <Animated.View style={{ opacity: fadeAnim }}>
                     <View style={[styles.sectionHeader, { paddingHorizontal: 20, marginBottom: 0 }]}>
                         <Text style={styles.sectionTitle}>Recent Rx</Text>
-                        <TouchableOpacity onPress={() => navigate('HISTORY')} style={styles.seeAllBtn}>
-                            <Text style={styles.seeAllText}>See all</Text>
-                            <Feather name="chevron-right" size={13} color={COLORS.primary} />
-                        </TouchableOpacity>
                     </View>
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.rxScrollContent}>
                         <TouchableOpacity style={styles.rxCardNew} onPress={() => navigate('SCANNER')}>
@@ -310,7 +297,7 @@ export default function DashboardScreen({ user, navigate }) {
                             </TouchableOpacity>
                         ))}
                     </ScrollView>
-                </Animated.View>
+                </View>
 
 
                 {/* ── Insight Card ── */}
