@@ -10,6 +10,9 @@ import { API_URL } from '../config';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
+// Today's date as "YYYY-MM-DD" — used for all DoseLog-aware API calls
+const TODAY = new Date().toISOString().split('T')[0];
+
 const ADDITIONAL_FEATURES = [
     { label: 'Pharmacy', icon: 'map-marker-radius-outline', bg: ['#F43F5E', '#E11D48'], screen: 'PHARMACY' },
     { label: 'Timeline', icon: 'timeline-clock-outline', bg: GRADIENTS.teal, screen: 'PRESCRIPTION_TIMELINE' },
@@ -24,7 +27,7 @@ const HEALTH_TIPS = [
     { title: "Stay Hydrated", body: "Drinking water helps your kidneys process medications more efficiently." },
     { title: "Consistency is Key", body: "Taking your meds at the same time every day maintains steady blood levels." },
     { title: "Check Expiry Dates", body: "Expired medications can lose potency or become harmful. Check your cabinet!" },
-    { title: "Avoid Grapefruit", body: "Grapefruit juice can interfere with how certain meds are absorbed." }
+    { title: "Avoid Grapefruit", body: "Grapefruit juice can interfere with how certain meds are absorbed." },
 ];
 
 export default function DashboardScreen({ user, navigate }) {
@@ -35,14 +38,12 @@ export default function DashboardScreen({ user, navigate }) {
     const [healthScore, setHealthScore] = useState(0);
     const [streak, setStreak] = useState(0);
 
-    // Animation Refs
     const fadeAnim = useRef(new Animated.Value(0)).current;
     const slideAnim = useRef(new Animated.Value(24)).current;
     const beamAnim = useRef(new Animated.Value(0)).current;
 
     useEffect(() => {
-        const randomTip = HEALTH_TIPS[Math.floor(Math.random() * HEALTH_TIPS.length)];
-        setActiveTip(randomTip);
+        setActiveTip(HEALTH_TIPS[Math.floor(Math.random() * HEALTH_TIPS.length)]);
 
         Animated.parallel([
             Animated.timing(fadeAnim, { toValue: 1, duration: 600, useNativeDriver: true }),
@@ -51,8 +52,7 @@ export default function DashboardScreen({ user, navigate }) {
 
         Animated.loop(
             Animated.timing(beamAnim, {
-                toValue: 1,
-                duration: 3500,
+                toValue: 1, duration: 3500,
                 easing: Easing.bezier(0.4, 0, 0.2, 1),
                 useNativeDriver: true,
             })
@@ -63,19 +63,20 @@ export default function DashboardScreen({ user, navigate }) {
         }
     }, [user]);
 
+    // ── Fetch ─────────────────────────────────────────────────────────────────
     const fetchDashboardData = async () => {
         const userId = user?.id || user?._id;
         if (!userId) return;
 
         try {
-            // Parallel fetch for Score, History, and Meds
             const [histRes, medsRes, scoreRes] = await Promise.all([
                 fetch(`${API_URL}api/prescriptions/history?user_id=${userId}`),
-                fetch(`${API_URL}api/medications?user_id=${userId}`),
-                fetch(`${API_URL}api/user/health-score?user_id=${userId}`)
+                // ✅ Pass today's date so the backend overlays DoseLog taken status correctly
+                fetch(`${API_URL}api/medications?user_id=${userId}&date=${TODAY}`),
+                fetch(`${API_URL}api/user/health-score?user_id=${userId}`),
             ]);
 
-            // 1. Process Health Score (Aligned with your new backend response)
+            // Health score
             if (scoreRes.ok) {
                 const scoreData = await scoreRes.json();
                 if (scoreData.status === 'success') {
@@ -84,7 +85,7 @@ export default function DashboardScreen({ user, navigate }) {
                 }
             }
 
-            // 2. Process Prescription History
+            // Prescription history
             const histData = await histRes.json();
             if (histData.status === 'success') {
                 const formattedScans = histData.history.map(item => {
@@ -100,10 +101,10 @@ export default function DashboardScreen({ user, navigate }) {
                 setRecentScans(formattedScans);
             }
 
-            // 3. Process Medications
+            // Medications — flatten into one row per dose time
             const medsData = await medsRes.json();
             if (medsData && Array.isArray(medsData)) {
-                let flat = [];
+                const flat = [];
                 medsData.forEach(med => {
                     (med.times || []).forEach(t => {
                         flat.push({
@@ -113,8 +114,8 @@ export default function DashboardScreen({ user, navigate }) {
                             name: med.name,
                             dose: med.dose,
                             time: t.time,
-                            taken: t.taken,
-                            icon: t.icon || 'pill'
+                            taken: t.taken,   // ← populated correctly from DoseLog via backend
+                            icon: t.icon || 'pill',
                         });
                     });
                 });
@@ -126,20 +127,47 @@ export default function DashboardScreen({ user, navigate }) {
         }
     };
 
-    const takenCount = meds.filter(m => m.taken).length;
-    const adherencePct = meds.length > 0 ? Math.round((takenCount / meds.length) * 100) : 0;
-    const weeklyTrend = meds.length > 0 ? (takenCount > 0 ? `+${takenCount + 1}` : "0") : "0";
-    const firstName = user?.name?.split(' ')[0] || user?.full_name?.split(' ')[0] || 'User';
-
-    const toggleMed = async (id) => {
-        const med = meds.find(m => m.id === id);
-        if (!med) return;
-        setMeds(prev => prev.map(m => m.id === id ? { ...m, taken: !m.taken } : m));
+    const refreshScore = async () => {
+        const userId = user?.id || user?._id;
+        if (!userId) return;
         try {
-            await fetch(`${API_URL}api/medications/${med.medId}/times/${med.timeId}/toggle`, { method: 'PUT' });
+            const res = await fetch(`${API_URL}api/user/health-score?user_id=${userId}`);
+            const data = await res.json();
+            if (data.status === 'success') {
+                setHealthScore(data.score ?? 0);
+                setStreak(data.streak ?? 0);
+            }
         } catch (_) { }
     };
 
+    // ── Toggle dose ───────────────────────────────────────────────────────────
+    const toggleMed = async (id) => {
+        const med = meds.find(m => m.id === id);
+        if (!med) return;
+
+        // Optimistic update
+        setMeds(prev => prev.map(m => m.id === id ? { ...m, taken: !m.taken } : m));
+
+        try {
+            // ✅ Pass today's date so the backend writes to DoseLog for today
+            await fetch(
+                `${API_URL}api/medications/${med.medId}/times/${med.timeId}/toggle?date=${TODAY}`,
+                { method: 'PUT' }
+            );
+            refreshScore();
+        } catch (_) {
+            // Revert optimistic update on failure
+            setMeds(prev => prev.map(m => m.id === id ? { ...m, taken: med.taken } : m));
+        }
+    };
+
+    // ── Derived stats ─────────────────────────────────────────────────────────
+    const takenCount = meds.filter(m => m.taken).length;
+    const adherencePct = meds.length > 0 ? Math.round((takenCount / meds.length) * 100) : 0;
+    const weeklyTrend = meds.length > 0 ? (takenCount > 0 ? `+${takenCount + 1}` : '0') : '0';
+    const firstName = user?.name?.split(' ')[0] || user?.full_name?.split(' ')[0] || 'User';
+
+    // ─────────────────────────────────────────────────────────────────────────
     return (
         <SafeAreaView style={styles.container}>
             <StatusBar barStyle="light-content" backgroundColor={COLORS.midnight} />
@@ -223,7 +251,12 @@ export default function DashboardScreen({ user, navigate }) {
                         </TouchableOpacity>
                     ) : (
                         meds.slice(0, 4).map(med => (
-                            <TouchableOpacity key={med.id} style={[styles.medRow, med.taken && styles.medRowDone]} onPress={() => toggleMed(med.id)}>
+                            <TouchableOpacity
+                                key={med.id}
+                                style={[styles.medRow, med.taken && styles.medRowDone]}
+                                onPress={() => toggleMed(med.id)}
+                                activeOpacity={0.75}
+                            >
                                 <View style={[styles.medTimeBox, med.taken && styles.medTimeBoxDone]}>
                                     <Text style={[styles.medTimeText, med.taken && styles.textDone]}>{med.time}</Text>
                                 </View>
@@ -277,6 +310,7 @@ export default function DashboardScreen({ user, navigate }) {
                         </View>
                     </LinearGradient>
                 </View>
+
             </ScrollView>
         </SafeAreaView>
     );

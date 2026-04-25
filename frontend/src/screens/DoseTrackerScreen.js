@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
     View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, Platform,
     TextInput, Animated, StatusBar,
@@ -18,11 +18,19 @@ const generateWeek = () => {
         return {
             label: DAYS[d.getDay()],
             date: d.getDate(),
+            fullDate: d,
             isToday: i === 3,
-            hasDose: i <= 3,
-            done: i < 3,
+            isPast: i < 3,
+            isFuture: i > 3,
         };
     });
+};
+
+const getDateString = (dayIndex) => {
+    const today = new Date();
+    const d = new Date(today);
+    d.setDate(today.getDate() - 3 + dayIndex);
+    return d.toISOString().split('T')[0];
 };
 
 // ─── Member Header Strip ───────────────────────────────────────────────────────
@@ -60,7 +68,11 @@ const ms = StyleSheet.create({
     btnText: { fontSize: 11, fontWeight: '700', color: COLORS.primary },
 });
 
-export default function DoseTrackerScreen({ user, navigate, goBack, currentScreen, memberId: propMemberId, memberName: propMemberName }) {
+// ─── Main Screen ──────────────────────────────────────────────────────────────
+export default function DoseTrackerScreen({
+    user, navigate, goBack, currentScreen,
+    memberId: propMemberId, memberName: propMemberName,
+}) {
     const [activeMemberId, setActiveMemberId] = useState(propMemberId || null);
     const [activeMemberName, setActiveMemberName] = useState(propMemberName || null);
 
@@ -73,79 +85,137 @@ export default function DoseTrackerScreen({ user, navigate, goBack, currentScree
     const [streak, setStreak] = useState(0);
 
     const week = generateWeek();
+
+    // ── Animation refs ────────────────────────────────────────────────────────
     const progressAnim = useRef(new Animated.Value(0)).current;
-    const fadeAnim = useRef(new Animated.Value(0)).current;
+    const fadeAnim = useRef(new Animated.Value(0)).current;  // screen mount
+    const listFade = useRef(new Animated.Value(1)).current;  // list swap
+    const listSlide = useRef(new Animated.Value(0)).current;  // list swap
 
-    useEffect(() => {
-        Animated.timing(fadeAnim, { toValue: 1, duration: 500, useNativeDriver: true }).start();
-        if (user?.id) {
-            fetchMeds();
-            fetchStreak();
-        }
-    }, [user, activeMemberId]);
-
+    // ── Sync props ────────────────────────────────────────────────────────────
     useEffect(() => {
         setActiveMemberId(propMemberId || null);
         setActiveMemberName(propMemberName || null);
     }, [propMemberId, propMemberName]);
 
-    const fetchMeds = async () => {
+    // ── fetchMeds: fade out → fetch → fade in ────────────────────────────────
+    const fetchMeds = useCallback(async (dayIndex) => {
+        if (!user?.id) return;
+
+        // Fade + slide list out
+        await new Promise(resolve =>
+            Animated.parallel([
+                Animated.timing(listFade, { toValue: 0, duration: 110, useNativeDriver: true }),
+                Animated.timing(listSlide, { toValue: 10, duration: 110, useNativeDriver: true }),
+            ]).start(resolve)
+        );
+
         try {
-            // Filter by member_id if viewing a family member
-            let url = `${API_URL}api/medications?user_id=${user.id}`;
+            const dateStr = getDateString(dayIndex);
+            let url = `${API_URL}api/medications?user_id=${user.id}&date=${dateStr}`;
             if (activeMemberId) url += `&member_id=${activeMemberId}`;
-
-            const response = await fetch(url);
-            const data = await response.json();
+            const res = await fetch(url);
+            const data = await res.json();
             setMeds(data);
-        } catch (err) { console.error('Error fetching meds:', err); }
-    };
+        } catch (err) {
+            console.error('Error fetching meds:', err);
+        }
 
-    const fetchStreak = async () => {
+        // Fade + spring list back in
+        Animated.parallel([
+            Animated.timing(listFade, { toValue: 1, duration: 200, useNativeDriver: true }),
+            Animated.spring(listSlide, { toValue: 0, speed: 30, bounciness: 5, useNativeDriver: true }),
+        ]).start();
+
+    }, [user, activeMemberId]);
+
+    const fetchStreak = useCallback(async () => {
         try {
             const res = await fetch(`${API_URL}api/user/health-score?user_id=${user.id}`);
             const data = await res.json();
-            if (data.status === 'success') {
-                setStreak(data.streak || 0);
-            }
+            if (data.status === 'success') setStreak(data.streak || 0);
         } catch (err) { console.error('Error fetching streak:', err); }
-    };
+    }, [user]);
 
+    // Screen mount animation
+    useEffect(() => {
+        Animated.timing(fadeAnim, { toValue: 1, duration: 500, useNativeDriver: true }).start();
+        fetchStreak();
+    }, []);
+
+    // Re-fetch on day / member change
+    useEffect(() => {
+        fetchMeds(selectedDay);
+    }, [fetchMeds, selectedDay]);
+
+    // ── Progress — animates smoothly between values, never jumps to 0 ─────────
     const totalDoses = meds.reduce((acc, m) => acc + (m.times?.length || 0), 0);
     const takenDoses = meds.reduce((acc, m) => acc + (m.times?.filter(t => t.taken).length || 0), 0);
     const pct = totalDoses > 0 ? Math.round((takenDoses / totalDoses) * 100) : 0;
 
     useEffect(() => {
-        Animated.timing(progressAnim, { toValue: pct, duration: 1000, useNativeDriver: false }).start();
+        Animated.timing(progressAnim, { toValue: pct, duration: 500, useNativeDriver: false }).start();
     }, [pct]);
 
+    const progressWidth = progressAnim.interpolate({ inputRange: [0, 100], outputRange: ['0%', '100%'] });
+    const getProgressColor = () =>
+        pct >= 80 ? ['#059669', '#10B981'] :
+            pct >= 50 ? ['#D97706', '#F59E0B'] :
+                ['#DC2626', '#EF4444'];
+
+    // ── Day pill tap ──────────────────────────────────────────────────────────
+    const handleDayPress = (i) => {
+        if (i === selectedDay) return;
+        setSelectedDay(i); // triggers fetchMeds via useEffect above
+    };
+
+    // ── Header label ──────────────────────────────────────────────────────────
+    const selectedDayInfo = week[selectedDay];
+    const dayLabel = selectedDayInfo.isToday
+        ? "Today's Progress"
+        : selectedDayInfo.isPast
+            ? `${selectedDayInfo.label} ${selectedDayInfo.date} Progress`
+            : `${selectedDayInfo.label} ${selectedDayInfo.date} (Upcoming)`;
+
+    const isFutureDay = selectedDayInfo?.isFuture;
+
+    // ── Toggle dose ───────────────────────────────────────────────────────────
     const toggleDose = async (medId, timeId) => {
+        // Optimistic update — no fade needed, instant feel
         setMeds(prev => prev.map(m => {
             if (m.id !== medId) return m;
             return { ...m, times: m.times.map(t => t.id === timeId ? { ...t, taken: !t.taken } : t) };
         }));
+
+        const dateStr = getDateString(selectedDay);
         try {
-            const res = await fetch(`${API_URL}api/medications/${medId}/times/${timeId}/toggle`, { method: 'PUT' });
-            if (res.ok) fetchStreak(); // Refresh streak if dose taken
-        } catch (err) { fetchMeds(); }
+            const res = await fetch(
+                `${API_URL}api/medications/${medId}/times/${timeId}/toggle?date=${dateStr}`,
+                { method: 'PUT' }
+            );
+            if (res.ok) fetchStreak();
+            else fetchMeds(selectedDay);
+        } catch {
+            fetchMeds(selectedDay);
+        }
     };
 
     const handleDeleteMed = async (medId) => {
         try {
-            const response = await fetch(`${API_URL}api/medications/${medId}`, { method: 'DELETE' });
-            if (response.ok) fetchMeds();
+            const res = await fetch(`${API_URL}api/medications/${medId}`, { method: 'DELETE' });
+            if (res.ok) fetchMeds(selectedDay);
         } catch (err) { console.error('Failed to delete med:', err); }
     };
 
     const handleUpdateTime = async (medId, timeId) => {
         const timeStr = `${editHour}:${editMin} ${editAmPm}`;
         try {
-            const response = await fetch(`${API_URL}api/medications/${medId}/times/${timeId}`, {
+            const res = await fetch(`${API_URL}api/medications/${medId}/times/${timeId}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ time: timeStr }),
             });
-            if (response.ok) { setEditingTimeId(null); fetchMeds(); }
+            if (res.ok) { setEditingTimeId(null); fetchMeds(selectedDay); }
         } catch (err) { console.error('Failed to update time:', err); }
     };
 
@@ -156,19 +226,16 @@ export default function DoseTrackerScreen({ user, navigate, goBack, currentScree
         setEditingTimeId(t.id);
     };
 
-    const progressWidth = progressAnim.interpolate({ inputRange: [0, 100], outputRange: ['0%', '100%'] });
-    const getProgressColor = () =>
-        pct >= 80 ? ['#059669', '#10B981'] : pct >= 50 ? ['#D97706', '#F59E0B'] : ['#DC2626', '#EF4444'];
-
     const screenTitle = activeMemberName ? `${activeMemberName}'s Doses` : 'Dose Tracker';
 
+    // ─────────────────────────────────────────────────────────────────────────
     return (
         <SafeAreaView style={styles.container}>
             <StatusBar barStyle="light-content" />
 
             <ScrollView contentContainerStyle={{ paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
 
-                {/* Header */}
+                {/* ── Header ── */}
                 <LinearGradient colors={['#0A1628', '#0F2535']} style={styles.header}>
                     <View style={styles.bgDeco} />
                     <View style={styles.headerTop}>
@@ -178,9 +245,7 @@ export default function DoseTrackerScreen({ user, navigate, goBack, currentScree
                         <View style={{ flex: 1, paddingLeft: 14 }}>
                             <Text style={styles.headerTitle}>{screenTitle}</Text>
                             <Text style={styles.headerSub}>
-                                {activeMemberName
-                                    ? `Daily schedule for ${activeMemberName}`
-                                    : 'Stay consistent, stay healthy'}
+                                {activeMemberName ? `Daily schedule for ${activeMemberName}` : 'Stay consistent, stay healthy'}
                             </Text>
                         </View>
                         <View style={styles.headerRight}>
@@ -195,21 +260,25 @@ export default function DoseTrackerScreen({ user, navigate, goBack, currentScree
                     <View style={styles.progressCard}>
                         <View style={styles.progressTop}>
                             <View>
-                                <Text style={styles.progressLabel}>Today's Progress</Text>
+                                <Text style={styles.progressLabel}>{dayLabel}</Text>
                                 <Text style={styles.progressSub}>{takenDoses} of {totalDoses} doses taken</Text>
                             </View>
                             <Text style={styles.progressPct}>{pct}%</Text>
                         </View>
                         <View style={styles.progressBarBg}>
                             <Animated.View style={[styles.progressBarFill, { width: progressWidth }]}>
-                                <LinearGradient colors={getProgressColor()} style={StyleSheet.absoluteFillObject} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} />
+                                <LinearGradient
+                                    colors={getProgressColor()}
+                                    style={StyleSheet.absoluteFillObject}
+                                    start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+                                />
                             </Animated.View>
                         </View>
                         {pct === 100 && totalDoses > 0 && (
                             <View style={styles.allDoneRow}>
                                 <Ionicons name="checkmark-circle" size={16} color="#34D399" />
                                 <Text style={styles.allDoneText}>
-                                    All doses complete{activeMemberName ? ` for ${activeMemberName}` : ''} today! 🎉
+                                    All doses complete{activeMemberName ? ` for ${activeMemberName}` : ''}! 🎉
                                 </Text>
                             </View>
                         )}
@@ -224,32 +293,67 @@ export default function DoseTrackerScreen({ user, navigate, goBack, currentScree
                     />
                 )}
 
-                {/* Calendar strip */}
+                {/* ── Calendar strip ── */}
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.calStrip}>
-                    {week.map((day, i) => (
-                        <TouchableOpacity
-                            key={i}
-                            style={[styles.dayPill, i === selectedDay && styles.dayPillActive]}
-                            onPress={() => setSelectedDay(i)}
-                        >
-                            <Text style={[styles.dayLabel, i === selectedDay && styles.dayLabelActive]}>{day.label}</Text>
-                            <Text style={[styles.dayNum, i === selectedDay && styles.dayNumActive]}>{day.date}</Text>
-                            {day.hasDose && (
+                    {week.map((day, i) => {
+                        const isActive = i === selectedDay;
+                        return (
+                            <TouchableOpacity
+                                key={i}
+                                style={[
+                                    styles.dayPill,
+                                    isActive && styles.dayPillActive,
+                                    day.isFuture && !isActive && styles.dayPillFuture,
+                                ]}
+                                onPress={() => handleDayPress(i)}
+                                activeOpacity={0.75}
+                            >
+                                <Text style={[
+                                    styles.dayLabel,
+                                    isActive && styles.dayLabelActive,
+                                    day.isFuture && !isActive && styles.dayLabelFuture,
+                                ]}>
+                                    {day.label}
+                                </Text>
+                                <Text style={[
+                                    styles.dayNum,
+                                    isActive && styles.dayNumActive,
+                                    day.isFuture && !isActive && styles.dayNumFuture,
+                                ]}>
+                                    {day.date}
+                                </Text>
                                 <View style={[
                                     styles.dayDot,
-                                    day.done ? styles.dayDotDone : day.isToday ? styles.dayDotToday : styles.dayDotFuture,
+                                    day.isPast ? styles.dayDotDone :
+                                        day.isToday ? styles.dayDotToday :
+                                            styles.dayDotFuture,
                                 ]} />
-                            )}
-                        </TouchableOpacity>
-                    ))}
+                            </TouchableOpacity>
+                        );
+                    })}
                 </ScrollView>
 
-                {/* Medicine List */}
-                <View style={{ paddingHorizontal: 16, paddingTop: 8 }}>
+                {/* Future-day banner */}
+                {isFutureDay && (
+                    <View style={styles.futureBanner}>
+                        <Ionicons name="time-outline" size={15} color={COLORS.textMuted} />
+                        <Text style={styles.futureBannerText}>
+                            You can't mark future doses. Come back on {week[selectedDay].label} {week[selectedDay].date}.
+                        </Text>
+                    </View>
+                )}
+
+                {/* ── Medicine list — fades + slides on day switch ── */}
+                <Animated.View style={{
+                    opacity: listFade,
+                    transform: [{ translateY: listSlide }],
+                    paddingHorizontal: 16,
+                    paddingTop: 8,
+                }}>
                     {meds.length === 0 ? (
                         <View style={styles.emptyState}>
                             <MaterialCommunityIcons name="pill-off" size={40} color={COLORS.border} />
-                            <Text style={styles.emptyTitle}>No medications yet</Text>
+                            <Text style={styles.emptyTitle}>No medications</Text>
                             <Text style={styles.emptyText}>
                                 {activeMemberName
                                     ? `No medications found for ${activeMemberName}`
@@ -274,7 +378,7 @@ export default function DoseTrackerScreen({ user, navigate, goBack, currentScree
                                 <View key={t.id} style={[styles.doseRow, t.taken && styles.doseRowDone]}>
                                     {editingTimeId === t.id ? (
                                         <View style={[styles.doseMainArea, { backgroundColor: '#fff' }]}>
-                                            <View style={[styles.timeIcon, { backgroundColor: (med.colorBg || COLORS.successBg) }]}>
+                                            <View style={[styles.timeIcon, { backgroundColor: med.colorBg || COLORS.successBg }]}>
                                                 <MaterialCommunityIcons name={t.icon || 'pill'} size={18} color={med.color || COLORS.primary} />
                                             </View>
                                             <View style={{ flex: 1 }}>
@@ -288,7 +392,7 @@ export default function DoseTrackerScreen({ user, navigate, goBack, currentScree
                                                             maxLength={2}
                                                             placeholder="HH"
                                                             placeholderTextColor={COLORS.textMuted}
-                                                            selectTextOnFocus={true}
+                                                            selectTextOnFocus
                                                         />
                                                         <Text style={styles.inlineSeparator}>:</Text>
                                                         <TextInput
@@ -299,9 +403,12 @@ export default function DoseTrackerScreen({ user, navigate, goBack, currentScree
                                                             maxLength={2}
                                                             placeholder="MM"
                                                             placeholderTextColor={COLORS.textMuted}
-                                                            selectTextOnFocus={true}
+                                                            selectTextOnFocus
                                                         />
-                                                        <TouchableOpacity onPress={() => setEditAmPm(editAmPm === 'AM' ? 'PM' : 'AM')} style={styles.inlineAmPm}>
+                                                        <TouchableOpacity
+                                                            onPress={() => setEditAmPm(editAmPm === 'AM' ? 'PM' : 'AM')}
+                                                            style={styles.inlineAmPm}
+                                                        >
                                                             <Text style={styles.inlineAmPmText}>{editAmPm}</Text>
                                                         </TouchableOpacity>
                                                     </View>
@@ -316,16 +423,22 @@ export default function DoseTrackerScreen({ user, navigate, goBack, currentScree
                                             </View>
                                         </View>
                                     ) : (
-                                        <TouchableOpacity style={styles.doseMainArea} onPress={() => toggleDose(med.id, t.id)} activeOpacity={0.7}>
-                                            <View style={[styles.timeIcon, { backgroundColor: (med.colorBg || COLORS.successBg) }]}>
+                                        <TouchableOpacity
+                                            style={styles.doseMainArea}
+                                            onPress={() => !isFutureDay && toggleDose(med.id, t.id)}
+                                            activeOpacity={isFutureDay ? 1 : 0.7}
+                                        >
+                                            <View style={[styles.timeIcon, { backgroundColor: med.colorBg || COLORS.successBg }]}>
                                                 <MaterialCommunityIcons name={t.icon || 'pill'} size={18} color={med.color || COLORS.primary} />
                                             </View>
                                             <View style={{ flex: 1 }}>
                                                 <View style={styles.doseTimeRow}>
                                                     <Text style={[styles.doseTime, t.taken && styles.doseTimeDone]}>{t.time}</Text>
-                                                    <TouchableOpacity onPress={() => startEditing(t)} style={styles.editTimeBtn}>
-                                                        <Feather name="edit-2" size={12} color={COLORS.textMuted} />
-                                                    </TouchableOpacity>
+                                                    {!isFutureDay && (
+                                                        <TouchableOpacity onPress={() => startEditing(t)} style={styles.editTimeBtn}>
+                                                            <Feather name="edit-2" size={12} color={COLORS.textMuted} />
+                                                        </TouchableOpacity>
+                                                    )}
                                                 </View>
                                                 <Text style={styles.doseLabel}>{t.label}</Text>
                                             </View>
@@ -334,11 +447,12 @@ export default function DoseTrackerScreen({ user, navigate, goBack, currentScree
 
                                     {editingTimeId !== t.id && (
                                         <TouchableOpacity
-                                            onPress={() => toggleDose(med.id, t.id)}
-                                            activeOpacity={0.7}
+                                            onPress={() => !isFutureDay && toggleDose(med.id, t.id)}
+                                            activeOpacity={isFutureDay ? 1 : 0.7}
                                             style={[
                                                 styles.checkCircle,
                                                 t.taken && { backgroundColor: med.color || COLORS.primary, borderColor: med.color || COLORS.primary },
+                                                isFutureDay && styles.checkCircleDisabled,
                                             ]}
                                         >
                                             {t.taken
@@ -351,10 +465,10 @@ export default function DoseTrackerScreen({ user, navigate, goBack, currentScree
                             ))}
                         </View>
                     ))}
-                </View>
+                </Animated.View>
 
                 {/* Tip */}
-                <View style={[styles.tipCard, { marginHorizontal: 16 }]}>
+                <View style={[styles.tipCard, { marginHorizontal: 16, marginTop: 8 }]}>
                     <LinearGradient colors={['#0D9488', '#0891B2']} style={styles.tipIcon}>
                         <Ionicons name="notifications-outline" size={16} color="#fff" />
                     </LinearGradient>
@@ -381,6 +495,7 @@ const styles = StyleSheet.create({
     streakBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(245,158,11,0.2)', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(252,211,77,0.3)' },
     streakEmoji: { fontSize: 14 },
     streakText: { fontSize: 12, fontWeight: '800', color: '#FCD34D' },
+
     progressCard: { marginHorizontal: 20, backgroundColor: 'rgba(255,255,255,0.07)', borderRadius: 18, padding: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
     progressTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 },
     progressLabel: { fontSize: 13, fontWeight: '700', color: 'rgba(255,255,255,0.7)' },
@@ -394,14 +509,25 @@ const styles = StyleSheet.create({
     calStrip: { paddingHorizontal: 16, paddingVertical: 16, gap: 8 },
     dayPill: { alignItems: 'center', paddingVertical: 10, paddingHorizontal: 12, borderRadius: 14, backgroundColor: COLORS.white, borderWidth: 1, borderColor: COLORS.border, gap: 4, minWidth: 52, ...SHADOWS.sm },
     dayPillActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
+    dayPillFuture: { backgroundColor: COLORS.lightGray, borderColor: COLORS.border, opacity: 0.65 },
     dayLabel: { fontSize: 10, fontWeight: '700', color: COLORS.textSecondary, letterSpacing: 0.3 },
     dayLabelActive: { color: 'rgba(255,255,255,0.75)' },
+    dayLabelFuture: { color: COLORS.textMuted },
     dayNum: { fontSize: 17, fontWeight: '900', color: COLORS.textPrimary },
     dayNumActive: { color: '#fff' },
+    dayNumFuture: { color: COLORS.textMuted },
     dayDot: { width: 5, height: 5, borderRadius: 2.5 },
     dayDotDone: { backgroundColor: '#34D399' },
     dayDotToday: { backgroundColor: COLORS.warningText },
     dayDotFuture: { backgroundColor: COLORS.border },
+
+    futureBanner: {
+        flexDirection: 'row', alignItems: 'center', gap: 8,
+        marginHorizontal: 16, marginBottom: 4,
+        backgroundColor: COLORS.lightGray, borderRadius: 12, padding: 10,
+        borderWidth: 1, borderColor: COLORS.border,
+    },
+    futureBannerText: { fontSize: 12, color: COLORS.textMuted, flex: 1 },
 
     doseTimeRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
     editTimeBtn: { padding: 4 },
@@ -413,8 +539,6 @@ const styles = StyleSheet.create({
     inlineAmPmText: { fontSize: 12, fontWeight: '800', color: COLORS.primary },
     inlineSave: { padding: 4, backgroundColor: COLORS.primaryGlow, borderRadius: 6 },
     inlineCancel: { padding: 4 },
-    saveBtn: { paddingVertical: 14, borderRadius: 12, alignItems: 'center' },
-    saveBtnText: { color: '#fff', fontSize: 14, fontWeight: '700' },
 
     emptyState: { alignItems: 'center', paddingVertical: 48, gap: 10, backgroundColor: '#fff', borderRadius: 20, marginVertical: 8, borderWidth: 1.5, borderColor: COLORS.border, borderStyle: 'dashed' },
     emptyTitle: { fontSize: 16, fontWeight: '700', color: COLORS.textPrimary },
@@ -435,8 +559,9 @@ const styles = StyleSheet.create({
     doseLabel: { fontSize: 12, color: COLORS.textSecondary, marginTop: 2 },
     checkCircle: { width: 30, height: 30, borderRadius: 15, borderWidth: 2, borderColor: COLORS.border, justifyContent: 'center', alignItems: 'center' },
     checkCircleInner: { width: 10, height: 10, borderRadius: 5, backgroundColor: COLORS.lightGray },
+    checkCircleDisabled: { opacity: 0.35 },
 
-    tipCard: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14, backgroundColor: COLORS.successBg, borderRadius: 16, borderWidth: 1, borderColor: COLORS.border, marginTop: 8 },
+    tipCard: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14, backgroundColor: COLORS.successBg, borderRadius: 16, borderWidth: 1, borderColor: COLORS.border },
     tipIcon: { width: 36, height: 36, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
     tipText: { flex: 1, fontSize: 13, color: COLORS.primaryDark, lineHeight: 19 },
 });
