@@ -79,34 +79,54 @@ class FamilyMemberCreate(BaseModel):
 
 
 class FamilyMemberUpdate(BaseModel):
-    name: Optional[str] = Field(None, min_length=1, max_length=80)
+    name: Optional[str] = None
     relation: Optional[str] = None
     age: Optional[str] = None
     blood_group: Optional[str] = None
 
-    @field_validator("name")
+    @field_validator("name", mode="before")
     @classmethod
     def strip_name(cls, v: Optional[str]) -> Optional[str]:
-        return v.strip().title() if v else v
+        if not v:
+            return None
+        v_str = str(v).strip().title()
+        return v_str if v_str else None
 
-    @field_validator("relation")
+    @field_validator("relation", mode="before")
     @classmethod
     def validate_relation(cls, v: Optional[str]) -> Optional[str]:
-        if v is None:
+        if not v:
             return None
-        v_titled = v.strip().title()
+        v_titled = str(v).strip().title()
         if v_titled and v_titled not in VALID_RELATIONS:
-            raise ValueError(f"Relation must be one of {sorted(VALID_RELATIONS)}")
+            return None
         return v_titled
 
-    @field_validator("blood_group")
+    @field_validator("blood_group", mode="before")
     @classmethod
     def validate_blood_group(cls, v: Optional[str]) -> Optional[str]:
-        if v is not None:
-            v = v.strip().upper()
-            if v and v not in VALID_BLOOD_GROUPS:
-                raise ValueError(f"blood_group must be one of {sorted(VALID_BLOOD_GROUPS)}")
-        return v or None
+        if not v:
+            return None
+        v_upper = str(v).strip().upper()
+        if v_upper and v_upper not in VALID_BLOOD_GROUPS:
+            return None
+        return v_upper
+
+    @field_validator("age", mode="before")
+    @classmethod
+    def validate_age(cls, v: Optional[str]) -> Optional[str]:
+        if v is None:
+            return None
+        v_str = str(v).strip()
+        if not v_str:
+            return None
+        try:
+            age_int = int(v_str)
+            if 0 <= age_int <= 130:
+                return str(age_int)
+            return None
+        except ValueError:
+            return None
 
 
 class MedSummary(BaseModel):

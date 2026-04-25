@@ -310,9 +310,11 @@ const MemberFormModal = ({ visible, onClose, onSave, initialData, saving }) => {
     const [form, setForm] = useState(
         initialData || { name: '', relation: 'Spouse', age: '', bloodGroup: '' }
     );
+    const [error, setError] = useState('');
 
     useEffect(() => {
         setForm(initialData || { name: '', relation: 'Spouse', age: '', bloodGroup: '' });
+        setError('');
     }, [initialData, visible]);
 
     const set = (key, val) => setForm(f => ({ ...f, [key]: val }));
@@ -339,12 +341,15 @@ const MemberFormModal = ({ visible, onClose, onSave, initialData, saving }) => {
 
                         {/* Name */}
                         <Text style={styles.inputLabel}>Full Name *</Text>
-                        <View style={styles.inputWrap}>
-                            <Feather name="user" size={16} color={COLORS.textMuted} style={styles.inputIcon} />
+                        <View style={[styles.inputWrap, error ? { borderColor: '#EF4444', borderWidth: 1 } : null]}>
+                            <Feather name="user" size={16} color={error ? '#EF4444' : COLORS.textMuted} style={styles.inputIcon} />
                             <TextInput
                                 style={styles.modalInput}
                                 value={form.name}
-                                onChangeText={t => set('name', t)}
+                                onChangeText={t => {
+                                    set('name', t);
+                                    if (error) setError('');
+                                }}
                                 placeholder="e.g. Riya, Dad, Arya"
                                 placeholderTextColor={COLORS.textMuted}
                                 autoFocus={!isEdit}
@@ -437,9 +442,22 @@ const MemberFormModal = ({ visible, onClose, onSave, initialData, saving }) => {
                             </View>
                         </View>
 
+                        {error ? (
+                            <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#FEF2F2', padding: 10, borderRadius: 8, marginTop: 16 }}>
+                                <Feather name="alert-circle" size={16} color="#EF4444" style={{ marginRight: 8 }} />
+                                <Text style={{ color: '#EF4444', fontSize: 14, fontWeight: '600' }}>{error}</Text>
+                            </View>
+                        ) : null}
+
                         <TouchableOpacity
-                            style={[styles.saveBtn, saving && { opacity: 0.7 }]}
-                            onPress={() => onSave(form)}
+                            style={[styles.saveBtn, saving && { opacity: 0.7 }, error ? { marginTop: 12 } : { marginTop: 24 }]}
+                            onPress={() => {
+                                if (!form.name.trim()) {
+                                    setError('Please enter a name');
+                                    return;
+                                }
+                                onSave(form);
+                            }}
                             disabled={saving}
                         >
                             <LinearGradient colors={GRADIENTS.teal} style={styles.saveBtnGrad}>
@@ -535,7 +553,7 @@ export default function FamilyProfilesScreen({ user, navigate }) {
 
     // ── Add ────────────────────────────────────
     const addMember = async (form) => {
-        if (!form.name.trim()) { Alert.alert('Name required'); return; }
+        if (!form.name.trim()) return;
         setSaving(true);
         try {
             const res = await fetch(`${API_URL}api/family/`, {
@@ -589,7 +607,7 @@ export default function FamilyProfilesScreen({ user, navigate }) {
     };
 
     const saveMember = async (form) => {
-        if (!form.name.trim()) { Alert.alert('Name required'); return; }
+        if (!form.name.trim()) return;
         setSaving(true);
         try {
             const res = await fetch(`${API_URL}api/family/${editTarget.id}`, {
