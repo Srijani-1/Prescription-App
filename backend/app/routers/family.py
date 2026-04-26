@@ -183,39 +183,37 @@ def _days_left(med: models.Medication) -> Optional[int]:
     except Exception:
         return None
 
+from datetime import date as _date
 
-def _compute_health_score(meds: List[models.Medication]) -> tuple[int, str]:
+def _compute_health_score(
+    meds: List[models.Medication],
+    db: Session,
+) -> tuple[int, str]:
     if not meds:
-        return 0, "Needs Attention" # Start at 0
+        return 0, "Needs Attention"
 
-    # 1. Refill-based baseline (30% weight)
-    refill_score = 100
+    today = _date.today().isoformat()   # "YYYY-MM-DD"
+
     total_times = 0
     taken_times = 0
-    
+
     for m in meds:
-        # Refill deduction
-        rem = m.remaining_quantity if m.remaining_quantity is not None else 30.0
-        thr = m.refill_threshold if m.refill_threshold is not None else 5.0
-        if rem <= 0:
-            refill_score -= 20
-        elif rem <= thr:
-            refill_score -= 10
-        
-        # Collect time stats
         for t in m.times:
             total_times += 1
-            if t.taken:
+            log = (
+                db.query(models.DoseLog)
+                .filter(
+                    models.DoseLog.medication_time_id == t.id,
+                    models.DoseLog.date == today,
+                    models.DoseLog.taken == True,
+                )
+                .first()
+            )
+            if log:
                 taken_times += 1
 
-    refill_score = max(0, refill_score)
-    
-    # 2. Adherence-based component (70% weight)
     adherence_pct = (taken_times / total_times * 100) if total_times > 0 else 0
-    
-    # Composite score
-    score = int(adherence_pct)
-    score = max(0, min(100, score))
+    score = max(0, min(100, int(adherence_pct)))
 
     if score >= 85:
         label = "Excellent"
@@ -233,16 +231,20 @@ def _serialize_member(
     m: models.FamilyMember,
     meds: List[models.Medication],
     presc_count: int,
+    db: Session,
 ) -> FamilyMemberResponse:
-    urgent = [med for med in meds if med.remaining_quantity <= med.refill_threshold]
-    score, label = _compute_health_score(meds)
+    urgent = [
+        med for med in meds
+        if (med.remaining_quantity or 0) <= (med.refill_threshold or 5)
+    ]
+    score, label = _compute_health_score(meds, db)
 
     med_summaries = []
     for med in meds:
-        rem = med.remaining_quantity if med.remaining_quantity is not None else 0.0
-        total = med.total_quantity if med.total_quantity is not None else 30.0
-        thr = med.refill_threshold if med.refill_threshold is not None else 5.0
-        
+        rem   = med.remaining_quantity if med.remaining_quantity is not None else 0.0
+        total = med.total_quantity     if med.total_quantity     is not None else 30.0
+        thr   = med.refill_threshold   if med.refill_threshold   is not None else 5.0
+
         med_summaries.append(
             MedSummary(
                 id=med.id,
@@ -271,7 +273,6 @@ def _serialize_member(
         meds=med_summaries,
     )
 
-
 # ─────────────────────────────────────────────
 # Routes
 # ─────────────────────────────────────────────
@@ -286,15 +287,6 @@ async def get_family(
     search: Optional[str] = Query(None, description="Filter by name (case-insensitive)"),
     db: Session = Depends(get_db),
 ):
-    """
-    Returns all family members for a user, each enriched with:
-    - medication counts and summaries (with days-left estimates)
-    - prescription counts
-    - urgent refill counts
-    - a 0-100 health adherence score
-
-    Uses a single DB round-trip per aggregate via joined loading — no N+1.
-    """
     _assert_user_exists(user_id, db)
     
     # Daily reset check
@@ -318,7 +310,7 @@ async def get_family(
     members = query.all()
 
     results = [
-        _serialize_member(m, m.medications, len(m.prescriptions))
+        _serialize_member(m, m.medications, len(m.prescriptions), db)
         for m in members
     ]
     return results
@@ -388,9 +380,8 @@ async def get_family_stats(user_id: str, db: Session = Depends(get_db)):
 )
 async def get_member(member_id: str, db: Session = Depends(get_db)):
     m = _fetch_member_or_404(member_id, db, load_relations=True)
-    # Reset check
     check_and_reset_daily(m.user_id, db)
-    return _serialize_member(m, m.medications, len(m.prescriptions))
+    return _serialize_member(m, m.medications, len(m.prescriptions), db)
 
 
 @router.post(
@@ -428,11 +419,8 @@ async def add_family_member(req: FamilyMemberCreate, db: Session = Depends(get_d
     db.add(new_member)
     db.commit()
     db.refresh(new_member)
-
-    # Re-fetch with relations for response
     new_member = _fetch_member_or_404(new_member.id, db, load_relations=True)
-    serialized = _serialize_member(new_member, new_member.medications, len(new_member.prescriptions))
-
+    serialized = _serialize_member(new_member, new_member.medications, len(new_member.prescriptions), db)
     logger.info("Family member created: %s (user=%s)", new_member.id, req.user_id)
     return CreateResponse(status="success", id=new_member.id, member=serialized)
 
@@ -465,9 +453,8 @@ async def update_family_member(
 
     db.commit()
     db.refresh(m)
-
     m = _fetch_member_or_404(member_id, db, load_relations=True)
-    return _serialize_member(m, m.medications, len(m.prescriptions))
+    return _serialize_member(m, m.medications, len(m.prescriptions), db)
 
 
 @router.delete(

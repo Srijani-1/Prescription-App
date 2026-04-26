@@ -78,47 +78,59 @@ app.include_router(medications_router)
 app.include_router(symptoms_router)
 app.include_router(family_router)
 
-@app.get("/api/user/health-score") # Fixed path to include /user/
+@app.get("/api/user/health-score")
 async def get_health_score(user_id: str, db: Session = Depends(get_db)):
-    # Perform daily reset check
+    from datetime import date
+
     user = check_and_reset_daily(user_id, db)
-    
+    today = date.today().isoformat()   # "YYYY-MM-DD"
+
     medications = db.query(models.Medication).filter(
         models.Medication.user_id == user_id,
         models.Medication.member_id == None
     ).all()
-    
-    # If no medications, return a default baseline score
+
     if not medications:
         return {
-            "status": "success", 
-            "score": 0, 
+            "status": "success",
+            "score": 0,
             "streak": user.streak if user else 0,
             "trend": "+0 this week"
         }
-        
+
     total_doses = 0
     taken_doses = 0
-    
+
     for med in medications:
-        times = db.query(models.MedicationTime).filter(models.MedicationTime.medication_id == med.id).all()
+        times = db.query(models.MedicationTime).filter(
+            models.MedicationTime.medication_id == med.id
+        ).all()
+
         total_doses += len(times)
-        taken_doses += sum(1 for t in times if t.taken)
-    
-    # Calculate adherence-based score (0-100)
+
+        # ── Count taken doses from DoseLog for TODAY, not MedicationTime.taken ──
+        for t in times:
+            log = db.query(models.DoseLog).filter(
+                models.DoseLog.medication_time_id == t.id,
+                models.DoseLog.date == today,
+                models.DoseLog.taken == True,
+            ).first()
+            if log:
+                taken_doses += 1
+
     score = 0
-    adherence = 0
+    adherence = 0.0
     if total_doses > 0:
         adherence = taken_doses / total_doses
         score = int(adherence * 100)
-        
+
     return {
-        "status": "success", 
-        "score": score, 
+        "status": "success",
+        "score": score,
         "streak": user.streak if user else 0,
         "trend": f"+{int(adherence * 10)} this week"
     }
-
+    
 @app.post("/chat")
 async def chat(req: ChatRequest):
     country = req.country or "India"
