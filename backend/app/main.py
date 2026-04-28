@@ -79,18 +79,28 @@ app.include_router(symptoms_router)
 app.include_router(family_router)
 
 @app.get("/api/user/health-score")
-async def get_health_score(user_id: str, db: Session = Depends(get_db)):
-    from datetime import date
+async def get_health_score(user_id: str, date: Optional[str] = None, db: Session = Depends(get_db)):
+    from datetime import date as date_obj
+    from app.utils import compute_comprehensive_score
 
     user = check_and_reset_daily(user_id, db)
-    today = date.today().isoformat()   # "YYYY-MM-DD"
+    target_date = date or date_obj.today().isoformat()
 
-    medications = db.query(models.Medication).filter(
+    # Get personal meds
+    personal_meds = db.query(models.Medication).filter(
         models.Medication.user_id == user_id,
         models.Medication.member_id == None
     ).all()
 
-    if not medications:
+    # Get family members' meds
+    family_members = db.query(models.FamilyMember).filter(models.FamilyMember.user_id == user_id).all()
+    family_meds = []
+    for member in family_members:
+        family_meds.extend(member.medications)
+
+    all_meds = personal_meds + family_meds
+
+    if not all_meds:
         return {
             "status": "success",
             "score": 0,
@@ -98,37 +108,14 @@ async def get_health_score(user_id: str, db: Session = Depends(get_db)):
             "trend": "+0 this week"
         }
 
-    total_doses = 0
-    taken_doses = 0
+    score = compute_comprehensive_score(all_meds, target_date, db)
 
-    for med in medications:
-        times = db.query(models.MedicationTime).filter(
-            models.MedicationTime.medication_id == med.id
-        ).all()
-
-        total_doses += len(times)
-
-        # ── Count taken doses from DoseLog for TODAY, not MedicationTime.taken ──
-        for t in times:
-            log = db.query(models.DoseLog).filter(
-                models.DoseLog.medication_time_id == t.id,
-                models.DoseLog.date == today,
-                models.DoseLog.taken == True,
-            ).first()
-            if log:
-                taken_doses += 1
-
-    score = 0
-    adherence = 0.0
-    if total_doses > 0:
-        adherence = taken_doses / total_doses
-        score = int(adherence * 100)
-
+    # Simplified trend for now
     return {
         "status": "success",
         "score": score,
         "streak": user.streak if user else 0,
-        "trend": f"+{int(adherence * 10)} this week"
+        "trend": f"+{int(score / 10)} this week"
     }
     
 @app.post("/chat")

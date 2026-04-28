@@ -11,7 +11,15 @@ import { API_URL } from '../config';
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 // Today's date as "YYYY-MM-DD" — used for all DoseLog-aware API calls
-const TODAY = new Date().toISOString().split('T')[0];
+const getLocalDate = () => {
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+};
+
+const TODAY = getLocalDate();
 
 const ADDITIONAL_FEATURES = [
     { label: 'Pharmacy', icon: 'map-marker-radius-outline', bg: ['#F43F5E', '#E11D48'], screen: 'PHARMACY' },
@@ -73,7 +81,7 @@ export default function DashboardScreen({ user, navigate }) {
                 fetch(`${API_URL}api/prescriptions/history?user_id=${userId}`),
                 // ✅ Pass today's date so the backend overlays DoseLog taken status correctly
                 fetch(`${API_URL}api/medications?user_id=${userId}&date=${TODAY}`),
-                fetch(`${API_URL}api/user/health-score?user_id=${userId}`),
+                fetch(`${API_URL}api/user/health-score?user_id=${userId}&date=${TODAY}`),
             ]);
 
             // Health score
@@ -131,7 +139,7 @@ export default function DashboardScreen({ user, navigate }) {
         const userId = user?.id || user?._id;
         if (!userId) return;
         try {
-            const res = await fetch(`${API_URL}api/user/health-score?user_id=${userId}`);
+            const res = await fetch(`${API_URL}api/user/health-score?user_id=${userId}&date=${TODAY}`);
             const data = await res.json();
             if (data.status === 'success') {
                 setHealthScore(data.score ?? 0);
@@ -163,7 +171,6 @@ export default function DashboardScreen({ user, navigate }) {
 
     // ── Derived stats ─────────────────────────────────────────────────────────
     const takenCount = meds.filter(m => m.taken).length;
-    const adherencePct = meds.length > 0 ? Math.round((takenCount / meds.length) * 100) : 0;
     const weeklyTrend = meds.length > 0 ? (takenCount > 0 ? `+${takenCount + 1}` : '0') : '0';
     const firstName = user?.name?.split(' ')[0] || user?.full_name?.split(' ')[0] || 'User';
 
@@ -202,9 +209,9 @@ export default function DashboardScreen({ user, navigate }) {
                                 <Text style={styles.trendText}>{weeklyTrend} this week</Text>
                             </View>
                             <View style={styles.adherenceBarBg}>
-                                <View style={[styles.adherenceBarFill, { width: `${adherencePct}%` }]} />
+                                <View style={[styles.adherenceBarFill, { width: `${healthScore}%` }]} />
                             </View>
-                            <Text style={styles.adherenceLabel}>{takenCount}/{meds.length} doses today</Text>
+                            <Text style={styles.adherenceLabel}>Overall Health Score: {healthScore}%</Text>
                         </View>
                         <View style={styles.scoreCircleWrap}>
                             <View style={styles.scoreCircle}>

@@ -189,31 +189,14 @@ def _compute_health_score(
     meds: List[models.Medication],
     db: Session,
 ) -> tuple[int, str]:
+    from ..utils import compute_comprehensive_score
+    from datetime import date
+    
     if not meds:
         return 0, "Needs Attention"
 
-    today = _date.today().isoformat()   # "YYYY-MM-DD"
-
-    total_times = 0
-    taken_times = 0
-
-    for m in meds:
-        for t in m.times:
-            total_times += 1
-            log = (
-                db.query(models.DoseLog)
-                .filter(
-                    models.DoseLog.medication_time_id == t.id,
-                    models.DoseLog.date == today,
-                    models.DoseLog.taken == True,
-                )
-                .first()
-            )
-            if log:
-                taken_times += 1
-
-    adherence_pct = (taken_times / total_times * 100) if total_times > 0 else 0
-    score = max(0, min(100, int(adherence_pct)))
+    today = date.today().isoformat()
+    score = compute_comprehensive_score(meds, today, db)
 
     if score >= 85:
         label = "Excellent"
@@ -358,11 +341,16 @@ async def get_family_stats(user_id: str, db: Session = Depends(get_db)):
         .scalar() or 0
     )
 
-    # Health score: 100 - (15 * refill_pct)
-    overall_score = 100
-    if total_meds > 0:
-        deduction = int((refill_count / total_meds) * 60)
-        overall_score = max(0, 100 - deduction)
+    # Overall health score: Comprehensive across all family members' meds
+    from ..utils import compute_comprehensive_score
+    from datetime import date
+    
+    # Fetch all medications for all family members of this user
+    all_meds = db.query(models.Medication).filter(
+        models.Medication.member_id.in_(member_ids_subq)
+    ).all()
+    
+    overall_score = compute_comprehensive_score(all_meds, date.today().isoformat(), db)
 
     return FamilyStatsResponse(
         total_members=total_members,
@@ -426,7 +414,7 @@ async def add_family_member(req: FamilyMemberCreate, db: Session = Depends(get_d
 
 
 @router.patch(
-    "/{member_id}",
+    "/member/{member_id}",
     response_model=FamilyMemberResponse,
     summary="Partially update a family member's profile",
 )
@@ -458,7 +446,7 @@ async def update_family_member(
 
 
 @router.delete(
-    "/{member_id}",
+    "/member/{member_id}",
     status_code=status.HTTP_200_OK,
     summary="Delete a family member and handle their records",
 )

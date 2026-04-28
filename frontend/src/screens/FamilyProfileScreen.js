@@ -279,20 +279,7 @@ const MemberCard = ({ member, index, onSelect, onDelete, onEdit, isActive }) => 
 
                 <TouchableOpacity
                     style={styles.cardActionBtn}
-                    onPress={() =>
-                        Alert.alert(
-                            'Remove Profile',
-                            `Remove ${member.name}?\n\nTheir medications and prescriptions will be kept in your history.`,
-                            [
-                                { text: 'Cancel', style: 'cancel' },
-                                {
-                                    text: 'Remove',
-                                    style: 'destructive',
-                                    onPress: () => onDelete(member.id),
-                                },
-                            ]
-                        )
-                    }
+                    onPress={() => onDelete(member.id, member.name)}
                 >
                     <Feather name="trash-2" size={13} color={COLORS.dangerText} />
                     <Text style={[styles.cardActionText, { color: COLORS.dangerText }]}>Remove</Text>
@@ -495,6 +482,30 @@ export default function FamilyProfilesScreen({ user, navigate }) {
     const [editTarget, setEditTarget] = useState(null);
     const [saving, setSaving] = useState(false);
 
+    // Confirmation Modal
+    const [confirmModalVisible, setConfirmModalVisible] = useState(false);
+    const [confirmConfig, setConfirmConfig] = useState({ title: '', message: '', onConfirm: null, type: 'danger' });
+    const modalScale = useRef(new Animated.Value(0)).current;
+
+    const showConfirm = (title, message, onConfirm, type = 'danger') => {
+        setConfirmConfig({ title, message, onConfirm, type });
+        setConfirmModalVisible(true);
+        Animated.spring(modalScale, {
+            toValue: 1,
+            tension: 50,
+            friction: 7,
+            useNativeDriver: true,
+        }).start();
+    };
+
+    const hideConfirm = () => {
+        Animated.timing(modalScale, {
+            toValue: 0,
+            duration: 200,
+            useNativeDriver: true,
+        }).start(() => setConfirmModalVisible(false));
+    };
+
     // Animate header
     const headerAnim = useRef(new Animated.Value(0)).current;
 
@@ -610,7 +621,7 @@ export default function FamilyProfilesScreen({ user, navigate }) {
         if (!form.name.trim()) return;
         setSaving(true);
         try {
-            const res = await fetch(`${API_URL}api/family/${editTarget.id}`, {
+            const res = await fetch(`${API_URL}api/family/member/${editTarget.id}`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -645,13 +656,14 @@ export default function FamilyProfilesScreen({ user, navigate }) {
 
     // ── Delete ─────────────────────────────────
     const deleteMember = async (id) => {
+        hideConfirm();
         // Optimistic update
         setMembers(prev => prev.filter(m => m.id !== id));
         if (activeId === id) {
             setActiveId(members.find(m => m.id !== id)?.id || null);
         }
         try {
-            const res = await fetch(`${API_URL}api/family/${id}?unlink_records=true`, {
+            const res = await fetch(`${API_URL}api/family/member/${id}?unlink_records=true`, {
                 method: 'DELETE',
             });
             if (!res.ok) throw new Error('Delete failed');
@@ -899,7 +911,12 @@ export default function FamilyProfilesScreen({ user, navigate }) {
                             index={i}
                             isActive={m.id === activeId}
                             onSelect={member => setActiveId(member.id)}
-                            onDelete={deleteMember}
+                            onDelete={(id, name) => showConfirm(
+                                'Remove Profile',
+                                `Remove ${name}?\n\nTheir medications and prescriptions will be kept in your history.`,
+                                () => deleteMember(id),
+                                'danger'
+                            )}
                             onEdit={startEdit}
                         />
                     ))
@@ -963,6 +980,39 @@ export default function FamilyProfilesScreen({ user, navigate }) {
                 initialData={editTarget}
                 saving={saving}
             />
+
+            {/* Custom Confirmation Modal */}
+            <Modal visible={confirmModalVisible} transparent animationType="none">
+                <View style={styles.modalOverlayConfirm}>
+                    <Animated.View 
+                        style={[
+                            styles.modalBoxConfirm, 
+                            { transform: [{ scale: modalScale }] }
+                        ]}
+                    >
+                        <View style={[styles.modalIconWrapConfirm, { backgroundColor: confirmConfig.type === 'danger' ? '#FEF2F2' : '#F0FDF4' }]}>
+                            <Feather
+                                name={confirmConfig.type === 'danger' ? 'alert-triangle' : 'info'}
+                                size={28}
+                                color={confirmConfig.type === 'danger' ? '#EF4444' : COLORS.primary}
+                            />
+                        </View>
+                        <Text style={styles.modalTitleConfirm}>{confirmConfig.title}</Text>
+                        <Text style={styles.modalMsgConfirm}>{confirmConfig.message}</Text>
+                        <View style={styles.modalActionsConfirm}>
+                            <TouchableOpacity style={styles.mBtnSecondaryConfirm} onPress={hideConfirm}>
+                                <Text style={styles.mBtnSecondaryTextConfirm}>Cancel</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={[styles.mBtnPrimaryConfirm, { backgroundColor: confirmConfig.type === 'danger' ? '#EF4444' : COLORS.primary }]}
+                                onPress={() => confirmConfig.onConfirm ? confirmConfig.onConfirm() : hideConfirm()}
+                            >
+                                <Text style={styles.mBtnPrimaryTextConfirm}>Confirm</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </Animated.View>
+                </View>
+            </Modal>
         </SafeAreaView>
     );
 }
@@ -1191,4 +1241,16 @@ const styles = StyleSheet.create({
     saveBtn: { marginTop: 24, borderRadius: 14, overflow: 'hidden', ...SHADOWS.colored },
     saveBtnGrad: { height: 54, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 8 },
     saveBtnText: { fontSize: 16, fontWeight: '800', color: '#fff' },
+
+    // Custom Modal Styles
+    modalOverlayConfirm: { flex: 1, backgroundColor: 'rgba(15, 23, 42, 0.7)', justifyContent: 'center', alignItems: 'center' },
+    modalBoxConfirm: { backgroundColor: COLORS.white, borderRadius: 32, padding: 30, alignItems: 'center', width: '85%', maxWidth: 360, ...SHADOWS.lg },
+    modalIconWrapConfirm: { width: 64, height: 64, borderRadius: 32, justifyContent: 'center', alignItems: 'center', marginBottom: 20 },
+    modalTitleConfirm: { fontSize: 22, fontWeight: '900', color: '#0F172A', marginBottom: 10, textAlign: 'center' },
+    modalMsgConfirm: { fontSize: 15, color: COLORS.textSecondary, textAlign: 'center', lineHeight: 22, marginBottom: 30, paddingHorizontal: 10 },
+    modalActionsConfirm: { flexDirection: 'row', gap: 12, width: '100%' },
+    mBtnSecondaryConfirm: { flex: 1, height: 54, borderRadius: 16, backgroundColor: '#F8FAFC', justifyContent: 'center', alignItems: 'center' },
+    mBtnPrimaryConfirm: { flex: 1.5, height: 54, borderRadius: 16, justifyContent: 'center', alignItems: 'center', ...SHADOWS.md },
+    mBtnSecondaryTextConfirm: { fontWeight: '700', color: '#64748B', fontSize: 15 },
+    mBtnPrimaryTextConfirm: { fontWeight: '800', color: COLORS.white, fontSize: 15 },
 });
