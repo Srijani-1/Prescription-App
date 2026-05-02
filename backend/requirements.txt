@@ -1,7 +1,7 @@
 fastapi
 uvicorn
 pillow
-easyocr==1.6.2
+easyocr
 opencv-python-headless
 numpy
 spacy
@@ -20,4 +20,4 @@ pydantic[email]
 requests
 pytesseract
 rapidfuzz
-python-bidi==0.4.2
+python-bidi
